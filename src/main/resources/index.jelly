@@ -1,0 +1,6 @@
+<!--
+  This view is used to render the installed plugins page.
+-->
+<div>
+  This plugin provides "cloud" like functionality to Jenkins for those using a Xen Virtualization infrastructure.
+</div>
