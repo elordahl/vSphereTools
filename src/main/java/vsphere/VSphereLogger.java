@@ -46,7 +46,7 @@ public class VSphereLogger {
 	public void verboseLogger(PrintStream logger, String str, boolean force){
 		if(logger!=null &&
 				(verboseOutput || force)){
-			logger.println("[vSphere Cloud] "+str);
+			logger.println("["+Messages.VSphereLogger_title()+"] "+str);
 		}
 	}
 }

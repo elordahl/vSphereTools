@@ -34,10 +34,10 @@
           <f:entry field="server" title="${%Server}">
             <f:textbox  />
           </f:entry>
-          <f:entry field="user" title="${%Server-Username}">
+          <f:entry field="user" title="${%Username}">
             <f:textbox />
           </f:entry>
-          <f:entry field="pw" title="${%Server-Password}">
+          <f:entry field="pw" title="${%Password}">
              <f:password />
           </f:entry>
         </table>

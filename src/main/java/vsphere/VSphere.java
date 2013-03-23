@@ -1,6 +1,6 @@
 package vsphere;
 
-import java.io.PrintStream;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.rmi.RemoteException;
@@ -11,6 +11,7 @@ import com.vmware.vim25.InvalidProperty;
 import com.vmware.vim25.InvalidState;
 import com.vmware.vim25.RuntimeFault;
 import com.vmware.vim25.TaskInProgress;
+import com.vmware.vim25.TaskInfoState;
 import com.vmware.vim25.VirtualMachineCloneSpec;
 import com.vmware.vim25.VirtualMachinePowerState;
 import com.vmware.vim25.VirtualMachineRelocateSpec;
@@ -21,6 +22,7 @@ import com.vmware.vim25.mo.ResourcePool;
 import com.vmware.vim25.mo.ServiceInstance;
 import com.vmware.vim25.mo.Task;
 import com.vmware.vim25.mo.VirtualMachine;
+import com.vmware.vim25.mo.VirtualMachineSnapshot;
 
 
 /**
@@ -45,6 +47,10 @@ public class VSphere {
 	public static VSphere connect(String url, String user, String pw) throws RemoteException, MalformedURLException{
 		return new VSphere(url,user,pw);
 	}
+	
+	public static String vSphereOutput(String msg){
+		return (Messages._VSphere_build_title()+": ").concat(msg);
+	}
 
 	/**
 	 * Creates a new VM from a given template with a given name.
@@ -61,21 +67,18 @@ public class VSphere {
 
 		VirtualMachine sourceVm = getVmByName(template);
 
-		//TODO put this somewhere else.
-		String poolName = "Build";
-
 		//TODO add something to logout.
-		//	      if(sourceVm==null)
-		//	      {
+		if(sourceVm==null)
+		{
 		//	        System.out.println("No VM " + vmName + " found");
 		//	        si.getServerConnection().logout();
-		//	        return null;
+			return null;
 		//	        
-		//	      }
+		}
 
 		VirtualMachineRelocateSpec rel  = new VirtualMachineRelocateSpec();
 		rel.setDiskMoveType("createNewChildDiskBacking");
-		rel.setPool(getResourcePoolByName(poolName).getMOR());
+		rel.setPool(getResourcePoolByName(Messages.VSphere_pool_build()).getMOR());
 
 		VirtualMachineCloneSpec cloneSpec = new VirtualMachineCloneSpec();
 		cloneSpec.setLocation(rel);
@@ -87,8 +90,8 @@ public class VSphere {
 				cloneName, cloneSpec);
 		System.out.println("Cloning VM. Please wait ...");
 
-		String status = task.waitForMe();
-		if(status==Task.SUCCESS)
+		String status = task.waitForTask();
+		if(status==TaskInfoState.success.toString())
 		{
 			System.out.println("VM got cloned successfully.");
 		}
@@ -115,8 +118,7 @@ public class VSphere {
 	 * @throws InterruptedException
 	 */
 	public boolean startVm(VirtualMachine vm) throws VmConfigFault, TaskInProgress, FileFault, InvalidState, InsufficientResourcesFault, RuntimeFault, RemoteException, InterruptedException{
-		Task task = vm.powerOnVM_Task(null);
-		String status = task.waitForTask(10000, 10000);
+		String status = vm.powerOnVM_Task(null).waitForTask(10000, 10000);
 		if(status==Task.SUCCESS)
 		{
 			System.out.println("VM was powered up successfully.");
@@ -128,6 +130,65 @@ public class VSphere {
 			return false;
 		}  
 	}
+	
+	
+	public boolean takeSnapshot(VirtualMachine vm, String name, String description){
+		
+		try {
+			Task task = vm.createSnapshot_Task(name, description, false, false);
+			if (task.waitForTask()==Task.SUCCESS) {
+				return true;
+			}
+		} catch (Exception e) {
+			
+			e.printStackTrace();
+		}
+		
+		return false;
+	}
+	
+	public boolean revertToSnapshot(String vm, String snapshotname){
+
+		return true;
+	}
+	
+	
+	public boolean takeSnapshotWithMemory(VirtualMachine vm, String name, String description){
+		
+		try {
+			Task task = vm.createSnapshot_Task(name, description, true, false);
+			if (task.waitForTask()==Task.SUCCESS) {
+				return true;
+			}
+		} catch (Exception e) {
+			
+			e.printStackTrace();
+		}
+		
+		return false;
+	}
+	
+	public boolean markAsTemplate(VirtualMachine vm){
+		try{
+		vm.markAsTemplate();
+		}catch(Exception e){
+			e.printStackTrace();
+			return false;
+		}
+		return true;
+	}
+	
+	public boolean markAsVm(VirtualMachine vm){
+		try{
+		//vm.markAsVirtualMachine(getResourcePoolByName("Build").getMOR(), host);
+		}catch(Exception e){
+			e.printStackTrace();
+			return false;
+		}
+		return true;
+	}
+	
+	
 
 	/**
 	 * @param vm - VirtualMachine object of which IP is returned
@@ -158,7 +219,7 @@ public class VSphere {
 	 * @throws RuntimeFault 
 	 * @throws InvalidProperty 
 	 */
-	public String getIp(String name) throws InterruptedException, InvalidProperty, RuntimeFault, RemoteException{
+	public String getIpByName(String name) throws InterruptedException, InvalidProperty, RuntimeFault, RemoteException{
 
 		return getIp(getVmByName(name));
 	}
@@ -189,19 +250,22 @@ public class VSphere {
 				si.getRootFolder()).searchManagedEntity(
 						"ResourcePool", poolName);
 	}
+	
+	
+	public boolean destroyVmByName(String name) throws TaskInProgress, InvalidState, RuntimeFault, InvalidProperty, RemoteException, InterruptedException{
+		return destroyVm(getVmByName(name));
+	}
 
 	/**
 	 * Detroys the VM in vSphere
 	 * @param vm - VM object to destroy
+	 * @throws InterruptedException 
 	 */
-	public boolean destroyVm(VirtualMachine vm) throws TaskInProgress, InvalidState, RuntimeFault, RemoteException{
-		Task task;
+	private boolean destroyVm(VirtualMachine vm) throws TaskInProgress, InvalidState, RuntimeFault, RemoteException, InterruptedException{
 		String status;
 		if (vm.getRuntime().getPowerState() == VirtualMachinePowerState.poweredOn){
-			task = vm.powerOffVM_Task();
-			status = task.waitForMe();
+			status = vm.powerOffVM_Task().waitForTask();
 
-			//String status = task.waitForTask(10000, 10000);
 			if(status==Task.SUCCESS)
 			{
 				System.out.println("VM was powered down successfully.");
@@ -213,9 +277,7 @@ public class VSphere {
 			}  
 		}
 
-		task = vm.destroy_Task();
-		status = task.waitForMe();
-		//String status = task.waitForTask(10000, 10000);
+		status = vm.destroy_Task().waitForTask();
 		if(status==Task.SUCCESS)
 		{
 			System.out.println("VM was deleted successfully.");

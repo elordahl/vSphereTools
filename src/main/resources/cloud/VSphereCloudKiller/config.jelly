@@ -1,0 +1,18 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <!--
+    This jelly script is used for per-project configuration.
+
+    See global.jelly for a general discussion about jelly script.
+  -->
+
+	<f:entry name="serverPerform" title="Select a Server" field="serverPerform">
+		<select name="serverPerform">
+            ${descriptor.getServersHTMLOptions()}
+        </select>
+    </f:entry>
+
+	<f:entry title="Name of VM in vSphere" field="vm">
+      <f:textbox  />
+    </f:entry>
+
+</j:jelly>
