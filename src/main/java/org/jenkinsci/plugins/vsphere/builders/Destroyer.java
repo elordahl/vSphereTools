@@ -19,6 +19,7 @@ import javax.servlet.ServletException;
 import org.jenkinsci.plugins.vsphere.Server;
 import org.jenkinsci.plugins.vsphere.VSpherePlugin;
 import org.jenkinsci.plugins.vsphere.tools.VSphere;
+import org.jenkinsci.plugins.vsphere.tools.VSphereException;
 import org.jenkinsci.plugins.vsphere.tools.VSphereLogger;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -32,7 +33,7 @@ public class Destroyer extends Builder{
 	private final VSphereLogger logger = VSphereLogger.getVSphereLogger();
 
 	@DataBoundConstructor
-	public Destroyer(String serverName,	String vm) throws Exception {
+	public Destroyer(String serverName,	String vm) throws VSphereException {
 		this.serverName = serverName;
 		server = getDescriptor().getGlobalDescriptor().getServer(serverName);
 		this.vm = vm;
@@ -47,20 +48,18 @@ public class Destroyer extends Builder{
 	}
 
 	@Override
-	public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws InterruptedException, IOException {
+	public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener)  {
 		PrintStream jLogger = listener.getLogger();
+		logger.verboseLogger(jLogger, "Using server configuration: " + server.getName(), true);
+
 		boolean killed = false;
 
 		try {
-
 			vsphere = VSphere.connect(server.getServer(), server.getUser(), server.getPw());
-			logger.verboseLogger(jLogger, "Using server configuration: " + server.getName(), true);
 
 			killed = killVm(build, launcher, listener);
-
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (VSphereException e) {
+			e.printStackTrace(jLogger);
 		}
 
 		if(vsphere!=null)
@@ -69,21 +68,15 @@ public class Destroyer extends Builder{
 		return killed;
 	}
 
-	public boolean killVm(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) {
+	private boolean killVm(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws VSphereException {
 
 		PrintStream jLogger = listener.getLogger();
 
-		try {
-			logger.verboseLogger(jLogger, "Destroying VM \""+vm+".\" Please wait ...", true);
-			if(vsphere.destroyVm(vm)){
-				logger.verboseLogger(jLogger, "Destroyed!", true);
-				return true;
-			}
-		} catch (Throwable e) {
-			e.printStackTrace(jLogger);
-		}	 
+		logger.verboseLogger(jLogger, "Destroying VM \""+vm+".\" Please wait ...", true);
+		vsphere.destroyVm(vm);
+		logger.verboseLogger(jLogger, "Destroyed!", true);
 
-		return false;
+		return true;
 	}
 
 	@Override
@@ -110,7 +103,7 @@ public class Destroyer extends Builder{
 				throws IOException, ServletException {
 			if (value.length() == 0)
 				return FormValidation.error("Please enter the VM name");
-				//TODO check if Vm exists
+			//TODO check if Vm exists
 			return FormValidation.ok();
 		}
 
@@ -130,7 +123,7 @@ public class Destroyer extends Builder{
 
 		private final VSpherePlugin.DescriptorImpl getGlobalDescriptor() {
 			return Hudson.getInstance().getDescriptorByType(VSpherePlugin.DescriptorImpl.class);
-        }
+		}
 
 		public ListBoxModel doFillServerNameItems(){
 			return getGlobalDescriptor().doFillServerItems();
@@ -138,5 +131,5 @@ public class Destroyer extends Builder{
 	}
 
 
-//TODO:  Make sure to set a default blank option in case the saved item gets deleted
+	//TODO:  Make sure to set a default blank option in case the saved item gets deleted
 }

@@ -23,6 +23,7 @@ import javax.servlet.ServletException;
 import org.jenkinsci.plugins.vsphere.Server;
 import org.jenkinsci.plugins.vsphere.VSpherePlugin;
 import org.jenkinsci.plugins.vsphere.tools.VSphere;
+import org.jenkinsci.plugins.vsphere.tools.VSphereException;
 import org.jenkinsci.plugins.vsphere.tools.VSphereLogger;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -38,7 +39,7 @@ public class Starter extends Builder{
 
 	@DataBoundConstructor
 	public Starter(String serverName, String template,
-			String clone) throws Exception {
+			String clone) throws VSphereException {
 		this.template = template;
 		this.serverName = serverName;
 		server = getDescriptor().getGlobalDescriptor().getServer(serverName);
@@ -57,30 +58,19 @@ public class Starter extends Builder{
 	public String getServerName(){
 		return serverName;
 	}
-	
+
 	@Override
-	public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws InterruptedException, IOException {
+	public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) {
 		PrintStream jLogger = listener.getLogger();
 		boolean success=false;
 		try{
 			logger.verboseLogger(jLogger, "Using server configuration: " + server.getName(), true);
 			vsphere = VSphere.connect(server.getServer(), server.getUser(), server.getPw());
 
-			if(deployFromTemplate(build, launcher, listener)){
-				String vmIP = vsphere.getIp(clone); 
-				if(vmIP!=null){
-					logger.verboseLogger(jLogger, "Got IP for \""+clone+"\" ", true);
-					VSphereEnvAction envAction = new VSphereEnvAction();
-					envAction.add("VSPHERE_"+clone, vmIP);
-					build.addAction(envAction);
-					success=true;
-				}
-				else{
-					logger.verboseLogger(jLogger, "Couldn't get IP Address!", true);
-				}
-			}			
-		} catch(Exception e){
-			e.printStackTrace();
+			success = deployFromTemplate(build, launcher, listener);
+			
+		} catch(VSphereException e){
+			e.printStackTrace(jLogger);
 		}
 
 		if(vsphere!=null)
@@ -89,21 +79,23 @@ public class Starter extends Builder{
 		return success;
 	}
 
-	public boolean deployFromTemplate(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) {
-		boolean deployed = false;
+	private boolean deployFromTemplate(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws VSphereException {
 		PrintStream jLogger = listener.getLogger();
 		logger.verboseLogger(jLogger, "Cloning VM. Please wait ...", true);
-		
-		try {
-			if (vsphere.shallowCloneVm(clone, template, true) && vsphere.startVm(clone)){
-				logger.verboseLogger(jLogger, "Clone successful! Waiting a maximum of 100 seconds for IP.", true);
-				deployed=true;
-			}
-		} catch (Throwable e) {
-			e.printStackTrace(jLogger);
-		}
 
-		return deployed;
+		vsphere.shallowCloneVm(clone, template, true);
+		vsphere.startVm(clone);
+		logger.verboseLogger(jLogger, "Clone successful! Waiting a maximum of 100 seconds for IP.", true);
+		
+		String vmIP = vsphere.getIp(clone); 
+		if(vmIP!=null){
+			logger.verboseLogger(jLogger, "Got IP for \""+clone+"\" ", true);
+			VSphereEnvAction envAction = new VSphereEnvAction();
+			envAction.add("VSPHERE_"+clone, vmIP);
+			build.addAction(envAction);
+			return true;
+		}			
+		return false;
 	}
 
 
@@ -112,7 +104,7 @@ public class Starter extends Builder{
 		return (DescriptorImpl )super.getDescriptor();
 	}
 
-	
+
 	@Extension
 	public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
@@ -127,7 +119,7 @@ public class Starter extends Builder{
 		public String getDisplayName() {
 			return VSphere.vSphereOutput(Messages.vm_title_Starter());
 		}
-		
+
 
 		@Override
 		public boolean isApplicable(Class<? extends AbstractProject> jobType) {
@@ -164,16 +156,16 @@ public class Starter extends Builder{
 			return FormValidation.ok();
 		}
 
-		
+
 		private final VSpherePlugin.DescriptorImpl getGlobalDescriptor() {
 			return Hudson.getInstance().getDescriptorByType(VSpherePlugin.DescriptorImpl.class);
-        }
+		}
 
 		public ListBoxModel doFillServerNameItems(){
 			return getGlobalDescriptor().doFillServerItems();
 		}
 	}
-	
+
 	/**
 	 * This class is used to inject the IP value into the build environment
 	 * as a variable so that it can be used with other plugins.

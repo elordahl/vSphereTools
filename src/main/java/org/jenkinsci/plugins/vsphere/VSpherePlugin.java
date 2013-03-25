@@ -13,6 +13,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 
+import org.jenkinsci.plugins.vsphere.tools.VSphereException;
 import org.kohsuke.stapler.StaplerRequest;
 
 /**
@@ -106,12 +107,12 @@ public class VSpherePlugin extends Builder {
 			return servers;
 		}
 		
-		public Server getServer(String name) throws Exception {
+		public Server getServer(String name) throws VSphereException {
 			for(Server server : servers)
 				if(server.getName().equals(name))
 					return server;
 			
-			throw new Exception("Server not found!");
+			throw new VSphereException("Server not found!");
 		}
 		
 		public ListBoxModel doFillServerItems(){

@@ -19,6 +19,7 @@ import javax.servlet.ServletException;
 import org.jenkinsci.plugins.vsphere.Server;
 import org.jenkinsci.plugins.vsphere.VSpherePlugin;
 import org.jenkinsci.plugins.vsphere.tools.VSphere;
+import org.jenkinsci.plugins.vsphere.tools.VSphereException;
 import org.jenkinsci.plugins.vsphere.tools.VSphereLogger;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -31,15 +32,15 @@ public class MarkTemplate extends Builder {
 	private final String serverName;
 	private final VSphereLogger logger = VSphereLogger.getVSphereLogger();
 	private VSphere vsphere = null;
-	
+
 	@DataBoundConstructor
-	public MarkTemplate(String serverName, String vm, boolean force) throws Exception {
+	public MarkTemplate(String serverName, String vm, boolean force) throws VSphereException {
 		this.serverName = serverName;
 		server = getDescriptor().getGlobalDescriptor().getServer(serverName);
 		this.force = force;
 		this.vm = vm;
 	}
-	
+
 	public String getVm() {
 		return vm;
 	}
@@ -47,58 +48,50 @@ public class MarkTemplate extends Builder {
 	public String getServerName(){
 		return serverName;
 	}
-	
+
 	public boolean isForce() {
 		return force;
 	}
 
 	@Override
-	public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws InterruptedException, IOException {
-		
+	public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) {
+
 		PrintStream jLogger = listener.getLogger();
+		boolean changed = false;
 		try {
 			logger.verboseLogger(jLogger, "Using server configuration: " + server.getName(), true);
-	
 			vsphere = VSphere.connect(server.getServer(), server.getUser(), server.getPw());
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
+			changed = markTemplate(build, launcher, listener);
+
+		} catch (VSphereException e) {
 			e.printStackTrace();
 		}
-		
-		boolean changed = markTemplate(build, launcher, listener);
-		
-		
+
 		if(vsphere!=null)
 			vsphere.disconnect();
 		return changed;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see hudson.tasks.BuildWrapper#setUp(hudson.model.AbstractBuild, hudson.Launcher, hudson.model.BuildListener)
 	 */
-	public boolean markTemplate(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) {
+	private boolean markTemplate(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws VSphereException {
 		PrintStream jLogger = listener.getLogger();
 		logger.verboseLogger(jLogger, "Marking VM as template. Please wait ...", true);		
-		try {
-			
-			if (vsphere.markAsTemplate(vm, force)){
-				logger.verboseLogger(jLogger, "VM \""+vm+"\" is now a template.", true);
-				return true;
-			}
-		} catch (Throwable e) {
-			e.printStackTrace(jLogger);
-			logger.verboseLogger(jLogger, "Error changing VM to template: " + e.getMessage(), true);
-		}	 
-		
-		return false;
+
+		vsphere.markAsTemplate(vm, force);
+		logger.verboseLogger(jLogger, "VM \""+vm+"\" is now a template.", true);
+
+
+		return true;
 	}
-	
-	
+
+
 	@Override
 	public DescriptorImpl getDescriptor() {
 		return (DescriptorImpl )super.getDescriptor();
 	}
-	
+
 	@Extension
 	public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
@@ -113,7 +106,7 @@ public class MarkTemplate extends Builder {
 		public String getDisplayName() {
 			return VSphere.vSphereOutput(Messages.vm_title_MarkTemplate());
 		}
-		
+
 		/**
 		 * Performs on-the-fly validation of the form field 'name'.
 		 *
@@ -123,7 +116,7 @@ public class MarkTemplate extends Builder {
 		 *      Indicates the outcome of the validation. This is sent to the browser.
 		 */
 		public FormValidation doCheckVm(@QueryParameter String value)
-		throws IOException, ServletException {
+				throws IOException, ServletException {
 			if (value.length() == 0)
 				return FormValidation.error("Please enter the template name");
 			return FormValidation.ok();
@@ -133,10 +126,10 @@ public class MarkTemplate extends Builder {
 		public boolean isApplicable(Class<? extends AbstractProject> jobType) {
 			return true;
 		}
-		
+
 		private final VSpherePlugin.DescriptorImpl getGlobalDescriptor() {
 			return Hudson.getInstance().getDescriptorByType(VSpherePlugin.DescriptorImpl.class);
-        }
+		}
 
 		public ListBoxModel doFillServerNameItems(){
 			return getGlobalDescriptor().doFillServerItems();
