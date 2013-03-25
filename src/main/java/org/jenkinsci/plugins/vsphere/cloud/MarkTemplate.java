@@ -5,9 +5,11 @@ import hudson.Launcher;
 import hudson.model.BuildListener;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.Hudson;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -19,18 +21,19 @@ import org.jenkinsci.plugins.vsphere.VSphereLogger;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
-public class MarkTemplate extends Builder{
+public class MarkTemplate extends Builder {
 
 	private final String vm;
 	private final boolean force;
-	private final String serverPerform;
-
-	private VSphereLogger logger = VSphereLogger.getVSphereLogger();
+	private final Server server;
+	private final String serverName;
+	private final VSphereLogger logger = VSphereLogger.getVSphereLogger();
 	private VSphere vsphere = null;
 	
 	@DataBoundConstructor
-	public MarkTemplate(String serverPerform, String vm, boolean force) {
-		this.serverPerform = serverPerform;
+	public MarkTemplate(String serverName, String vm, boolean force) throws Exception {
+		this.serverName = serverName;
+		server = getDescriptor().getGlobalDescriptor().getServer(serverName);
 		this.force = force;
 		this.vm = vm;
 	}
@@ -39,8 +42,8 @@ public class MarkTemplate extends Builder{
 		return vm;
 	}
 
-	public String getServerPerform(){
-		return serverPerform;
+	public String getServerName(){
+		return serverName;
 	}
 	
 	public boolean isForce() {
@@ -51,12 +54,10 @@ public class MarkTemplate extends Builder{
 	public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws InterruptedException, IOException {
 		
 		PrintStream jLogger = listener.getLogger();
-		
 		try {
-			ServerToSave serverObject = VSphereDescriptor.DescriptorImpl.getServerObjectFromVM(serverPerform);
-			logger.verboseLogger(jLogger, "Using server configuration: " + serverObject.getName(), true);
+			logger.verboseLogger(jLogger, "Using server configuration: " + server.getName(), true);
 	
-			vsphere = VSphere.connect(serverObject.getServer(), serverObject.getUser(), serverObject.getPw());
+			vsphere = VSphere.connect(server.getServer(), server.getUser(), server.getPw());
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -67,7 +68,6 @@ public class MarkTemplate extends Builder{
 		
 		if(vsphere!=null)
 			vsphere.disconnect();
-		
 		return changed;
 	}
 	
@@ -103,10 +103,6 @@ public class MarkTemplate extends Builder{
 		public DescriptorImpl() {
 			load();
 		}
-		
-		public static String getServersHTMLOptions(){
-			return VSphereDescriptor.DescriptorImpl.getServersHTMLOptions();
-		}
 
 		/**
 		 * This human readable name is used in the configuration screen.
@@ -133,8 +129,15 @@ public class MarkTemplate extends Builder{
 
 		@Override
 		public boolean isApplicable(Class<? extends AbstractProject> jobType) {
-			// TODO Auto-generated method stub
 			return true;
+		}
+		
+		private final VSphereDescriptor.DescriptorImpl getGlobalDescriptor() {
+			return Hudson.getInstance().getDescriptorByType(VSphereDescriptor.DescriptorImpl.class);
+        }
+
+		public ListBoxModel doFillServerNameItems(){
+			return getGlobalDescriptor().doFillServerItems();
 		}
 	}	
 }

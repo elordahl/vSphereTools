@@ -17,18 +17,16 @@
       is mapped to our webapp/ directory, so this is a convenient way to serve
       static resources.
     -->    
-      <f:entry field="serversToSave"
+      <f:entry field="servers"
              title="${%Servers}"
              description="${%Servers containing Virtual Machines to revert/snapshot.}">
              
-      <f:repeatable var="obj" 
-                    header="Server Config"
-                    items="${descriptor.getServersToSave()}" 
-                    field="serversToSave"
+      <f:repeatable header="Server Configuration"
+                    field="servers"
                     add="${%Add Server}">
         <table width="100%">
           <br/>
-		  <f:entry field="name" title="${%Name}" value="${descriptor.getName()}">
+		  <f:entry field="name" title="${%Name}">
            <f:textbox  />
 		  </f:entry>
           <f:entry field="server" title="${%Server}">
@@ -42,8 +40,14 @@
           </f:entry>
         </table>
         <div align="right">
-          <input type="button" value="Delete Server" class="repeatable-delete" style="margin-left: 1em;" />
+          <f:repeatableDeleteButton value="${%Delete Server}"/>
         </div>
+        
+        <!--f:validateButton title="${%Test}" progress="${%Checking...}" method="test"
+                      with="server,user,pw"/
+                      
+                      obj.descriptor.doTest()
+                      -->
       </f:repeatable>
     </f:entry>
   

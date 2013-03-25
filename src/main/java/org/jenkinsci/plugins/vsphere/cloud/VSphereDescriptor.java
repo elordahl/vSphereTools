@@ -4,7 +4,7 @@ import hudson.Extension;
 import hudson.model.AbstractProject;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
-import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,10 +13,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 
-import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
-
-import org.jenkinsci.plugins.vsphere.VSphere;
 
 /**
  * Descriptor for {@link XenCloudBuilder}. Used as a singleton.
@@ -29,9 +26,6 @@ import org.jenkinsci.plugins.vsphere.VSphere;
 // This indicates to Jenkins that this is an implementation of an extension point.
 @Extension
 public class VSphereDescriptor extends Builder {
-
-
-
 
 	@Override
 	public DescriptorImpl getDescriptor() {
@@ -62,11 +56,6 @@ public class VSphereDescriptor extends Builder {
 			// TODO Auto-generated method stub
 			return null;
 		}
-		/**
-		 * 
-		 * 
-		 */
-
 
 		/**
 		 * To persist global configuration information,
@@ -75,7 +64,7 @@ public class VSphereDescriptor extends Builder {
 		 * <p>
 		 * If you don't want fields to be persisted, use <tt>transient</tt>.
 		 */
-		private static ArrayList<ServerToSave> serversToSave;
+		private volatile List<Server> servers;
 
 		public DescriptorImpl () {
 			//super();
@@ -87,97 +76,74 @@ public class VSphereDescriptor extends Builder {
 
 			// To persist global configuration information,
 			// set that to properties and call save().
-			serversToSave = saveFormServers(formData);
+			saveFormServers(formData);
 
-			save();
 			return true;
 			//super.configure(req,formData);
 		}
 
-		public ArrayList<ServerToSave> saveFormServers(JSONObject formData){
+		public void saveFormServers(JSONObject formData){
 
-			//clear each time
-			ArrayList<ServerToSave> servers = new ArrayList<ServerToSave>();
-
+			servers = new ArrayList<Server>();
+			
 			JSONArray serverJSONObjectArray;
 			try{
-				serverJSONObjectArray = formData.getJSONArray("serversToSave");
+				serverJSONObjectArray = formData.getJSONArray("servers");
 			}catch(JSONException jsone){
 				serverJSONObjectArray = new JSONArray();
-				serverJSONObjectArray.add(formData.getJSONObject("serversToSave"));
+				serverJSONObjectArray.add(formData.getJSONObject("servers"));
 			}
 
+			
 			for (int i=0, j=serverJSONObjectArray.size(); i<j; i++){
-
-				JSONObject serverCreds = serverJSONObjectArray.getJSONObject(i);
-
-				servers.add(new ServerToSave(
-						serverCreds.getString("server"), 
-						serverCreds.getString("user"), 
-						serverCreds.getString("pw"), 
-						serverCreds.getString("name")
-				));
+				servers.add(new Server(serverJSONObjectArray.getJSONObject(i)));
 			}
+			
+			save();
+		}
 
+		public List<Server> getServers() {
 			return servers;
 		}
-
-
-		public List<ServerToSave> getServersToSave() {
-			if (serversToSave == null) {
-				serversToSave = new ArrayList<ServerToSave>();
-			}
-
-			return serversToSave;
+		
+		public Server getServer(String name) throws Exception {
+			for(Server server : servers)
+				if(server.getName().equals(name))
+					return server;
+			
+			throw new Exception("Server not found!");
 		}
-
-		//generates html options because jelly code has
-		//problems with loops and am unable to parse code on client
-		public static String getServersHTMLOptions(){
-
-			String returnStr = "";
-			for(ServerToSave server : serversToSave){
-				returnStr += "<option value=\""+server.getName()+"\">" + server.getName() + "</option>";
+		
+		public ListBoxModel doFillServerItems(){
+			ListBoxModel select = new ListBoxModel(servers.size());
+			
+			//TODO: Add blank element for first default/
+			//select.add("Select a server...", null);
+			
+			for(Server server : servers){
+				select.add(server.getName());
 			}
-
-			return returnStr;
+			return select;
 		}
+		
+	/*	public FormValidation doCheckServers(@QueryParameter ArrayList<Server> servers)
+				throws IOException, ServletException {
+					if (!servers.isEmpty()){
+						
+						//servers.
+						return FormValidation.error("Please enter the clone name");
+						
+					return FormValidation.ok();
+				}*/
+		/*public Server getServerObjectFromVM(String serverName) throws Exception{
 
-
-		public static ServerToSave getServerObjectFromVM(String serverName) throws Exception{
-
-			for(ServerToSave server : serversToSave){
+			for(Server server : servers){
 				if(server.getName().equalsIgnoreCase(serverName)){
 					return server;
 				}
 			}
 
 			throw new Exception("Server not found!");
-		}
-
-
-		public FormValidation doTestConnection(@QueryParameter("server") final String server,
-				@QueryParameter("user") final String user, 
-				@QueryParameter("pw") final String pw) {
-
-			VSphere vSphere = null;
-
-			try {
-
-				vSphere = VSphere.connect(server, user, pw);
-
-				return FormValidation.ok("Success");
-			} catch (Exception e) {
-				return FormValidation.error("Failure");
-			}finally{
-				if (vSphere != null){
-					try {
-						vSphere.disconnect();
-					} catch (Exception e) {
-						e.printStackTrace();
-					} 
-				}
-			}
-		}
+		}*/
 	}
 }

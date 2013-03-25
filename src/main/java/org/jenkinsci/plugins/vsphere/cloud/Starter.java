@@ -7,9 +7,11 @@ import hudson.model.BuildListener;
 import hudson.model.EnvironmentContributingAction;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.Hudson;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -18,27 +20,26 @@ import java.util.Map;
 
 import javax.servlet.ServletException;
 
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
-
 import org.jenkinsci.plugins.vsphere.VSphere;
 import org.jenkinsci.plugins.vsphere.VSphereLogger;
-
-import com.vmware.vim25.mo.VirtualMachine;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 
 public class Starter extends Builder{
 
 	private final String template;
-	private final String serverPerform;
+	private final Server server;
+	private final String serverName;
 	private final String clone;
 	private VSphere vsphere = null;
-	private VSphereLogger logger = VSphereLogger.getVSphereLogger();
+	private final VSphereLogger logger = VSphereLogger.getVSphereLogger();
 
 	@DataBoundConstructor
-	public Starter(String serverPerform, String template,
-			String clone) {
+	public Starter(String serverName, String template,
+			String clone) throws Exception {
 		this.template = template;
-		this.serverPerform = serverPerform;
+		this.serverName = serverName;
+		server = getDescriptor().getGlobalDescriptor().getServer(serverName);
 		this.clone = clone;
 	}
 
@@ -51,18 +52,17 @@ public class Starter extends Builder{
 		return clone;
 	}
 
-	public String getServerPerform(){
-		return serverPerform;
+	public String getServerName(){
+		return serverName;
 	}
-
+	
 	@Override
 	public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws InterruptedException, IOException {
 		PrintStream jLogger = listener.getLogger();
 		boolean success=false;
 		try{
-			ServerToSave serverObject = VSphereDescriptor.DescriptorImpl.getServerObjectFromVM(serverPerform);
-			logger.verboseLogger(jLogger, "Using server configuration: " + serverObject.getName(), true);
-			vsphere = VSphere.connect(serverObject.getServer(), serverObject.getUser(), serverObject.getPw());
+			logger.verboseLogger(jLogger, "Using server configuration: " + server.getName(), true);
+			vsphere = VSphere.connect(server.getServer(), server.getUser(), server.getPw());
 
 			if(deployFromTemplate(build, launcher, listener)){
 				String vmIP = vsphere.getIp(clone); 
@@ -87,13 +87,9 @@ public class Starter extends Builder{
 		return success;
 	}
 
-	/* (non-Javadoc)
-	 * @see hudson.tasks.BuildWrapper#setUp(hudson.model.AbstractBuild, hudson.Launcher, hudson.model.BuildListener)
-	 */
 	public boolean deployFromTemplate(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) {
 		boolean deployed = false;
 		PrintStream jLogger = listener.getLogger();
-		String vmIP = null;
 		logger.verboseLogger(jLogger, "Cloning VM. Please wait ...", true);
 		
 		try {
@@ -114,15 +110,12 @@ public class Starter extends Builder{
 		return (DescriptorImpl )super.getDescriptor();
 	}
 
+	
 	@Extension
 	public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
 		public DescriptorImpl() {
 			load();
-		}
-
-		public static String getServersHTMLOptions(){
-			return VSphereDescriptor.DescriptorImpl.getServersHTMLOptions();
 		}
 
 		/**
@@ -131,6 +124,12 @@ public class Starter extends Builder{
 		@Override
 		public String getDisplayName() {
 			return VSphere.vSphereOutput(Messages.Starter_vm_start());
+		}
+		
+
+		@Override
+		public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+			return true;
 		}
 
 		/**
@@ -163,13 +162,16 @@ public class Starter extends Builder{
 			return FormValidation.ok();
 		}
 
-		@Override
-		public boolean isApplicable(Class<? extends AbstractProject> jobType) {
-			// TODO Auto-generated method stub
-			return true;
+		
+		private final VSphereDescriptor.DescriptorImpl getGlobalDescriptor() {
+			return Hudson.getInstance().getDescriptorByType(VSphereDescriptor.DescriptorImpl.class);
+        }
+
+		public ListBoxModel doFillServerNameItems(){
+			return getGlobalDescriptor().doFillServerItems();
 		}
 	}
-
+	
 	/**
 	 * This class is used to inject the IP value into the build environment
 	 * as a variable so that it can be used with other plugins.

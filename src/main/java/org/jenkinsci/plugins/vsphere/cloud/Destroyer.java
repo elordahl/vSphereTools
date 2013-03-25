@@ -5,9 +5,11 @@ import hudson.Launcher;
 import hudson.model.BuildListener;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.Hudson;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -21,51 +23,50 @@ import org.kohsuke.stapler.QueryParameter;
 
 public class Destroyer extends Builder{
 
-	private final String serverPerform;
 	private final String vm;
+	private final Server server;
+	private final String serverName;
 	private VSphere vsphere = null;
-	private VSphereLogger logger = VSphereLogger.getVSphereLogger();
-	
+	private final VSphereLogger logger = VSphereLogger.getVSphereLogger();
+
 	@DataBoundConstructor
-	public Destroyer(String serverPerform,	String vm) {
-		this.serverPerform = serverPerform;
+	public Destroyer(String serverName,	String vm) throws Exception {
+		this.serverName = serverName;
+		server = getDescriptor().getGlobalDescriptor().getServer(serverName);
 		this.vm = vm;
 	}
-	
+
 	public String getVm() {
 		return vm;
 	}
 
-	public String getServerPerform(){
-		return serverPerform;
+	public String getServerName(){
+		return serverName;
 	}
 
 	@Override
 	public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws InterruptedException, IOException {
 		PrintStream jLogger = listener.getLogger();
 		boolean killed = false;
-		
+
 		try {
-			ServerToSave serverObject = VSphereDescriptor.DescriptorImpl.getServerObjectFromVM(serverPerform);
-			vsphere = VSphere.connect(serverObject.getServer(), serverObject.getUser(), serverObject.getPw());
-			logger.verboseLogger(jLogger, "Using server configuration: " + serverObject.getName(), true);
-			
+
+			vsphere = VSphere.connect(server.getServer(), server.getUser(), server.getPw());
+			logger.verboseLogger(jLogger, "Using server configuration: " + server.getName(), true);
+
 			killed = killVm(build, launcher, listener);
-			
+
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 		if(vsphere!=null)
 			vsphere.disconnect();
 
 		return killed;
 	}
-	
-	/* (non-Javadoc)
-	 * @see hudson.tasks.BuildWrapper#setUp(hudson.model.AbstractBuild, hudson.Launcher, hudson.model.BuildListener)
-	 */
+
 	public boolean killVm(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) {
 
 		PrintStream jLogger = listener.getLogger();
@@ -79,15 +80,15 @@ public class Destroyer extends Builder{
 		} catch (Throwable e) {
 			e.printStackTrace(jLogger);
 		}	 
-		
+
 		return false;
 	}
-	
+
 	@Override
 	public DescriptorImpl getDescriptor() {
 		return (DescriptorImpl )super.getDescriptor();
 	}
-	
+
 	@Extension
 	public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
@@ -95,11 +96,6 @@ public class Destroyer extends Builder{
 			load();
 		}
 
-		
-		public static String getServersHTMLOptions(){
-			return VSphereDescriptor.DescriptorImpl.getServersHTMLOptions();
-		}
-		
 		/**
 		 * Performs on-the-fly validation of the form field 'clone'.
 		 *
@@ -108,13 +104,14 @@ public class Destroyer extends Builder{
 		 * @return
 		 *      Indicates the outcome of the validation. This is sent to the browser.
 		 */
-		public FormValidation doCheckClone(@QueryParameter String value)
-		throws IOException, ServletException {
+		public FormValidation doCheckVm(@QueryParameter String value)
+				throws IOException, ServletException {
 			if (value.length() == 0)
-				return FormValidation.error("Please enter the clone name");
+				return FormValidation.error("Please enter the VM name");
+				//TODO check if Vm exists
 			return FormValidation.ok();
 		}
-		
+
 		/**
 		 * This human readable name is used in the configuration screen.
 		 */
@@ -128,8 +125,16 @@ public class Destroyer extends Builder{
 			// TODO Auto-generated method stub
 			return true;
 		}
+
+		private final VSphereDescriptor.DescriptorImpl getGlobalDescriptor() {
+			return Hudson.getInstance().getDescriptorByType(VSphereDescriptor.DescriptorImpl.class);
+        }
+
+		public ListBoxModel doFillServerNameItems(){
+			return getGlobalDescriptor().doFillServerItems();
+		}
 	}
-	
-	
-	
+
+
+//TODO:  Make sure to set a default blank option in case the saved item gets deleted
 }

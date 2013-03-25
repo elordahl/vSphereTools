@@ -5,10 +5,8 @@
     See global.jelly for a general discussion about jelly script.
   -->
 
-	<f:entry name="serverPerform" title="${%Server}" field="serverPerform">
-		<select name="serverPerform">
-            ${descriptor.getServersHTMLOptions()}
-        </select>
+	<f:entry title="${%Server}" field="serverName">
+		<f:select />
     </f:entry>
 
     <f:entry title="${%Template}" field="template">
