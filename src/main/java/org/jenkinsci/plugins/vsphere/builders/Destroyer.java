@@ -1,4 +1,4 @@
-package org.jenkinsci.plugins.vsphere.cloud;
+package org.jenkinsci.plugins.vsphere.builders;
 
 import hudson.Extension;
 import hudson.Launcher;
@@ -16,8 +16,10 @@ import java.io.PrintStream;
 
 import javax.servlet.ServletException;
 
-import org.jenkinsci.plugins.vsphere.VSphere;
-import org.jenkinsci.plugins.vsphere.VSphereLogger;
+import org.jenkinsci.plugins.vsphere.Server;
+import org.jenkinsci.plugins.vsphere.VSpherePlugin;
+import org.jenkinsci.plugins.vsphere.tools.VSphere;
+import org.jenkinsci.plugins.vsphere.tools.VSphereLogger;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -117,7 +119,7 @@ public class Destroyer extends Builder{
 		 */
 		@Override
 		public String getDisplayName() {
-			return VSphere.vSphereOutput(Messages.Destroyer_vm_delete());
+			return VSphere.vSphereOutput(Messages.vm_title_Destroyer());
 		}
 
 		@Override
@@ -126,8 +128,8 @@ public class Destroyer extends Builder{
 			return true;
 		}
 
-		private final VSphereDescriptor.DescriptorImpl getGlobalDescriptor() {
-			return Hudson.getInstance().getDescriptorByType(VSphereDescriptor.DescriptorImpl.class);
+		private final VSpherePlugin.DescriptorImpl getGlobalDescriptor() {
+			return Hudson.getInstance().getDescriptorByType(VSpherePlugin.DescriptorImpl.class);
         }
 
 		public ListBoxModel doFillServerNameItems(){

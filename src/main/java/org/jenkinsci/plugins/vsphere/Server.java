@@ -1,4 +1,4 @@
-package org.jenkinsci.plugins.vsphere.cloud;
+package org.jenkinsci.plugins.vsphere;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;

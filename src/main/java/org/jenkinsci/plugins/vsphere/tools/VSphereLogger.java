@@ -1,4 +1,4 @@
-package org.jenkinsci.plugins.vsphere;
+package org.jenkinsci.plugins.vsphere.tools;
 
 import java.io.PrintStream;
 

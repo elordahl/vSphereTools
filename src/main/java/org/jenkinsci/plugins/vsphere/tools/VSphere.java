@@ -1,4 +1,4 @@
-package org.jenkinsci.plugins.vsphere;
+package org.jenkinsci.plugins.vsphere.tools;
 
 
 import java.net.MalformedURLException;
@@ -31,9 +31,6 @@ import com.vmware.vim25.mo.VirtualMachineSnapshot;
  */
 public class VSphere {
 
-	//private PrintStream jLogger;
-	//private static VSphereLogger xenLogger = VSphereLogger.getVSphereLogger();
-
 	private ServiceInstance si;
 
 	private VSphere(String url, String user, String pw) throws RemoteException, MalformedURLException{
@@ -49,7 +46,7 @@ public class VSphere {
 	}
 
 	public static String vSphereOutput(String msg){
-		return (Messages._VSphere_build_title()+": ").concat(msg);
+		return (Messages.VSphereLogger_title()+": ").concat(msg);
 	}
 
 	/**
@@ -75,7 +72,7 @@ public class VSphere {
 
 		VirtualMachineRelocateSpec rel  = new VirtualMachineRelocateSpec();
 		rel.setDiskMoveType("createNewChildDiskBacking");
-		rel.setPool(getResourcePoolByName(Messages.VSphere_pool_build()).getMOR());
+		rel.setPool(getResourcePoolByName(Messages.VSphere_pool_default()).getMOR());
 
 		VirtualMachineCloneSpec cloneSpec = new VirtualMachineCloneSpec();
 		cloneSpec.setLocation(rel);

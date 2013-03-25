@@ -1,4 +1,4 @@
-package org.jenkinsci.plugins.vsphere.cloud;
+package org.jenkinsci.plugins.vsphere;
 
 import hudson.Extension;
 import hudson.model.AbstractProject;
@@ -25,7 +25,7 @@ import org.kohsuke.stapler.StaplerRequest;
  */
 // This indicates to Jenkins that this is an implementation of an extension point.
 @Extension
-public class VSphereDescriptor extends Builder {
+public class VSpherePlugin extends Builder {
 
 	@Override
 	public DescriptorImpl getDescriptor() {
