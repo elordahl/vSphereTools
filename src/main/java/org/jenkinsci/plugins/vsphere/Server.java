@@ -54,12 +54,12 @@ public class Server extends AbstractDescribableImpl<Server> {
 	public Server(final JSONObject obj){
 		this(obj.getString("server"), obj.getString("user"),obj.getString("pw"),obj.getString("name"));
 	}
-	
+
 	@Extension
-    public static class DescriptorImpl extends Descriptor<Server> {
-        public String getDisplayName() { return ""; }
-    }
-	
+	public static class DescriptorImpl extends Descriptor<Server> {
+		public String getDisplayName() { return ""; }
+	}
+
 	/*public FormValidation doTest(@QueryParameter String server,
 			@QueryParameter String user, 
 			@QueryParameter String pw) {

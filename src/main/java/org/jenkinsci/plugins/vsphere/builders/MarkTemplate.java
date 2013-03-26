@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.vsphere.builders;
 
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.BuildListener;
@@ -57,10 +58,15 @@ public class MarkTemplate extends Builder {
 	public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) {
 
 		PrintStream jLogger = listener.getLogger();
+		logger.verboseLogger(jLogger, "Using server configuration: " + server.getName(), true);
 		boolean changed = false;
+
 		try {
-			logger.verboseLogger(jLogger, "Using server configuration: " + server.getName(), true);
-			vsphere = VSphere.connect(server.getServer(), server.getUser(), server.getPw());
+			//Need to ensure this server still exists.  If it's deleted
+			//and a job is not opened, it will still try to connect
+			getDescriptor().getGlobalDescriptor().checkServerExistence(server);
+
+			vsphere = VSphere.connect(server);
 			changed = markTemplate(build, launcher, listener);
 
 		} catch (VSphereException e) {
@@ -69,6 +75,7 @@ public class MarkTemplate extends Builder {
 
 		if(vsphere!=null)
 			vsphere.disconnect();
+
 		return changed;
 	}
 
@@ -79,8 +86,17 @@ public class MarkTemplate extends Builder {
 		PrintStream jLogger = listener.getLogger();
 		logger.verboseLogger(jLogger, "Marking VM as template. Please wait ...", true);		
 
-		vsphere.markAsTemplate(vm, force);
-		logger.verboseLogger(jLogger, "VM \""+vm+"\" is now a template.", true);
+		EnvVars env;
+		try {
+			env = build.getEnvironment(listener);
+		} catch (Exception e) {
+			throw new VSphereException(e);
+		}
+		env.overrideAll(build.getBuildVariables()); // Add in matrix axes..
+		String expandedVm = env.expand(vm);
+
+		vsphere.markAsTemplate(expandedVm, force);
+		logger.verboseLogger(jLogger, "VM \""+expandedVm+"\" is now a template.", true);
 
 
 		return true;

@@ -88,7 +88,7 @@ public class VSpherePlugin extends Builder {
 			servers = new ArrayList<Server>();
 			if (formData.isEmpty()) 
 				return;
-			
+
 			JSONArray serverJSONObjectArray;
 			try{
 				serverJSONObjectArray = formData.getJSONArray("servers");
@@ -96,7 +96,7 @@ public class VSpherePlugin extends Builder {
 				serverJSONObjectArray = new JSONArray();
 				serverJSONObjectArray.add(formData.getJSONObject("servers"));
 			}
-			
+
 			for (int i=0, j=serverJSONObjectArray.size(); i<j; i++){
 				servers.add(new Server(serverJSONObjectArray.getJSONObject(i)));
 			}
@@ -105,34 +105,40 @@ public class VSpherePlugin extends Builder {
 		public List<Server> getServers() {
 			return servers;
 		}
-		
+
 		public Server getServer(String name) throws VSphereException {
 			for(Server server : servers)
 				if(server.getName().equals(name))
 					return server;
-			
+
 			throw new VSphereException("Server not found!");
 		}
-		
+
 		public ListBoxModel doFillServerItems(){
 			ListBoxModel select = new ListBoxModel(servers.size());
-			
+
+			//TODO:  If you save this option in form, Exception occurs. fix me
 			//Add blank element for first default/
 			select.add("Select a server...", "");
-			
+
 			for(Server server : servers){
 				select.add(server.getName());
 			}
 			return select;
 		}
-		
-	/*	public FormValidation doCheckServers(@QueryParameter ArrayList<Server> servers)
+
+		public void checkServerExistence(Server server) throws VSphereException {
+			if(!servers.contains(server))
+				throw new VSphereException("Server does not exist in global config! Please re-save your job configuration.");
+		}
+
+		/*	public FormValidation doCheckServers(@QueryParameter ArrayList<Server> servers)
 				throws IOException, ServletException {
 					if (!servers.isEmpty()){
-						
+
 						//servers.
 						return FormValidation.error("Please enter the clone name");
-						
+
 					return FormValidation.ok();
 				}*/
 		/*public Server getServerObjectFromVM(String serverName) throws Exception{

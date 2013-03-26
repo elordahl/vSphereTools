@@ -2,6 +2,7 @@ package org.jenkinsci.plugins.vsphere.tools;
 
 
 import java.net.MalformedURLException;
+import org.jenkinsci.plugins.vsphere.Server;
 import java.net.URL;
 import java.rmi.RemoteException;
 
@@ -34,6 +35,7 @@ public class VSphere {
 	private ServiceInstance si;
 
 	private VSphere(String url, String user, String pw) throws VSphereException{
+		
 		try {
 			si = new ServiceInstance(new URL(url), user, pw, true);
 		} catch (Exception e) {
@@ -45,10 +47,10 @@ public class VSphere {
 	 * Initiates Connection to XenServer
 	 * @throws VSphereException 
 	 */
-	public static VSphere connect(String url, String user, String pw) throws VSphereException {
-		return new VSphere(url,user,pw);
+	public static VSphere connect(Server server) throws VSphereException {
+		return new VSphere(server.getServer(), server.getUser(), server.getPw());
 	}
-
+	
 	public static String vSphereOutput(String msg){
 		return (Messages.VSphereLogger_title()+": ").concat(msg);
 	}

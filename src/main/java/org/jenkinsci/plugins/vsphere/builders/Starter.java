@@ -61,14 +61,19 @@ public class Starter extends Builder{
 
 	@Override
 	public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) {
-		PrintStream jLogger = listener.getLogger();
-		boolean success=false;
-		try{
-			logger.verboseLogger(jLogger, "Using server configuration: " + server.getName(), true);
-			vsphere = VSphere.connect(server.getServer(), server.getUser(), server.getPw());
 
+		PrintStream jLogger = listener.getLogger();
+		logger.verboseLogger(jLogger, "Using server configuration: " + server.getName(), true);
+		boolean success=false;
+
+		try{
+			//Need to ensure this server still exists.  If it's deleted
+			//and a job is not opened, it will still try to connect
+			getDescriptor().getGlobalDescriptor().checkServerExistence(server);
+
+			vsphere = VSphere.connect(server);
 			success = deployFromTemplate(build, launcher, listener);
-			
+
 		} catch(VSphereException e){
 			logger.verboseLogger(jLogger, "Error Cloning to VM: " + e.getMessage(), true);
 		}
@@ -83,15 +88,25 @@ public class Starter extends Builder{
 		PrintStream jLogger = listener.getLogger();
 		logger.verboseLogger(jLogger, "Cloning VM. Please wait ...", true);
 
-		vsphere.shallowCloneVm(clone, template, true);
-		vsphere.startVm(clone);
+
+		EnvVars env;
+		try {
+			env = build.getEnvironment(listener);
+		} catch (Exception e) {
+			throw new VSphereException(e);
+		}
+		env.overrideAll(build.getBuildVariables()); // Add in matrix axes..
+		String expandedClone = env.expand(clone), expandedTemplate = env.expand(template);
+
+		vsphere.shallowCloneVm(expandedClone, expandedTemplate, true);
+		vsphere.startVm(expandedClone);
 		logger.verboseLogger(jLogger, "Clone successful! Waiting a maximum of 100 seconds for IP.", true);
-		
-		String vmIP = vsphere.getIp(clone); 
+
+		String vmIP = vsphere.getIp(expandedClone); 
 		if(vmIP!=null){
-			logger.verboseLogger(jLogger, "Got IP for \""+clone+"\" ", true);
+			logger.verboseLogger(jLogger, "Got IP for \""+expandedClone+"\" ", true);
 			VSphereEnvAction envAction = new VSphereEnvAction();
-			envAction.add("VSPHERE_"+clone, vmIP);
+			envAction.add("VSPHERE_"+expandedClone, vmIP);
 			build.addAction(envAction);
 			return true;
 		}			

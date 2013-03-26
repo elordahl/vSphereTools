@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.vsphere.builders;
 
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.BuildListener;
@@ -49,17 +50,21 @@ public class Destroyer extends Builder{
 
 	@Override
 	public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener)  {
+
 		PrintStream jLogger = listener.getLogger();
 		logger.verboseLogger(jLogger, "Using server configuration: " + server.getName(), true);
-
 		boolean killed = false;
 
 		try {
-			vsphere = VSphere.connect(server.getServer(), server.getUser(), server.getPw());
+			//Need to ensure this server still exists.  If it's deleted
+			//and a job is not opened, it will still try to connect
+			getDescriptor().getGlobalDescriptor().checkServerExistence(server);
 
+			vsphere = VSphere.connect(server);
 			killed = killVm(build, launcher, listener);
+
 		} catch (VSphereException e) {
-			logger.verboseLogger(jLogger, "Error Converting to deleting VM: " + e.getMessage(), true);
+			logger.verboseLogger(jLogger, "Error deleting VM: " + e.getMessage(), true);
 		}
 
 		if(vsphere!=null)
@@ -71,9 +76,17 @@ public class Destroyer extends Builder{
 	private boolean killVm(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws VSphereException {
 
 		PrintStream jLogger = listener.getLogger();
+		EnvVars env;
+		try {
+			env = build.getEnvironment(listener);
+		} catch (Exception e) {
+			throw new VSphereException(e);
+		}
+		env.overrideAll(build.getBuildVariables()); // Add in matrix axes..
+		String expandedVm = env.expand(vm);
 
-		logger.verboseLogger(jLogger, "Destroying VM \""+vm+".\" Please wait ...", true);
-		vsphere.destroyVm(vm);
+		logger.verboseLogger(jLogger, "Destroying VM \""+expandedVm+".\" Please wait ...", true);
+		vsphere.destroyVm(expandedVm);
 		logger.verboseLogger(jLogger, "Destroyed!", true);
 
 		return true;
