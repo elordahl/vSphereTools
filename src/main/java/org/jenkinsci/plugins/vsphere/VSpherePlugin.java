@@ -77,15 +77,17 @@ public class VSpherePlugin extends Builder {
 
 			// To persist global configuration information,
 			// set that to properties and call save().
-			saveFormServers(formData);
-
+			populateServers(formData);
+			save();
 			return true;
 			//super.configure(req,formData);
 		}
 
-		public void saveFormServers(JSONObject formData){
+		private void populateServers(JSONObject formData){
 
 			servers = new ArrayList<Server>();
+			if (formData.isEmpty()) 
+				return;
 			
 			JSONArray serverJSONObjectArray;
 			try{
@@ -94,13 +96,10 @@ public class VSpherePlugin extends Builder {
 				serverJSONObjectArray = new JSONArray();
 				serverJSONObjectArray.add(formData.getJSONObject("servers"));
 			}
-
 			
 			for (int i=0, j=serverJSONObjectArray.size(); i<j; i++){
 				servers.add(new Server(serverJSONObjectArray.getJSONObject(i)));
 			}
-			
-			save();
 		}
 
 		public List<Server> getServers() {
@@ -119,7 +118,7 @@ public class VSpherePlugin extends Builder {
 			ListBoxModel select = new ListBoxModel(servers.size());
 			
 			//Add blank element for first default/
-			select.add("Select a server...", null);
+			select.add("Select a server...", "");
 			
 			for(Server server : servers){
 				select.add(server.getName());
