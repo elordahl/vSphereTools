@@ -59,7 +59,7 @@ public class Destroyer extends Builder{
 
 			killed = killVm(build, launcher, listener);
 		} catch (VSphereException e) {
-			e.printStackTrace(jLogger);
+			logger.verboseLogger(jLogger, "Error Converting to deleting VM: " + e.getMessage(), true);
 		}
 
 		if(vsphere!=null)

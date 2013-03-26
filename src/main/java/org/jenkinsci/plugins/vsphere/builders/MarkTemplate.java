@@ -64,7 +64,7 @@ public class MarkTemplate extends Builder {
 			changed = markTemplate(build, launcher, listener);
 
 		} catch (VSphereException e) {
-			e.printStackTrace();
+			logger.verboseLogger(jLogger, "Error Converting to template: " + e.getMessage(), true);
 		}
 
 		if(vsphere!=null)

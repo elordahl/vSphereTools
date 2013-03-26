@@ -70,7 +70,7 @@ public class Starter extends Builder{
 			success = deployFromTemplate(build, launcher, listener);
 			
 		} catch(VSphereException e){
-			e.printStackTrace(jLogger);
+			logger.verboseLogger(jLogger, "Error Cloning to VM: " + e.getMessage(), true);
 		}
 
 		if(vsphere!=null)
