@@ -98,7 +98,7 @@ public class VSphere {
 			throw new VSphereException("Couldnt Clone: ", e);
 		}
 
-		throw new VSphereException("Error cloning \""+template+"\"");
+		throw new VSphereException("Error cloning \""+template+"!\" Does \""+cloneName+"\" already exist?");
 	}	  
 
 	/**
@@ -178,10 +178,10 @@ public class VSphere {
 				return;
 			}
 		}catch(Exception e){
-			throw new VSphereException("Could not mark as Template", e);
+			throw new VSphereException("Error: Could not mark as Template", e);
 		}
 
-		throw new VSphereException("Could not mark as Template.  Check it's power state or select \"force.\"");
+		throw new VSphereException("Error: Could not mark as Template. Check it's power state or select \"force.\"");
 	}
 
 	public boolean markAsVm(String name){
@@ -259,7 +259,7 @@ public class VSphere {
 		try{
 			VirtualMachine vm = getVmByName(name);
 			if(vm.getConfig().template)
-				throw new VSphereException("Specified name represents a template, not a VM.");
+				throw new VSphereException("Error: Specified name represents a template, not a VM.");
 
 			powerDown(vm, true);
 
@@ -271,7 +271,7 @@ public class VSphere {
 			}
 
 		}catch(Exception e){
-			throw new VSphereException(e);
+			throw new VSphereException(e.getMessage());
 		}
 
 		throw new VSphereException("Error destroying VM");

@@ -70,7 +70,7 @@ public class MarkTemplate extends Builder {
 			changed = markTemplate(build, launcher, listener);
 
 		} catch (VSphereException e) {
-			logger.verboseLogger(jLogger, "Error Converting to template: " + e.getMessage(), true);
+			logger.verboseLogger(jLogger, e.getMessage(), true);
 		}
 
 		if(vsphere!=null)
@@ -134,7 +134,7 @@ public class MarkTemplate extends Builder {
 		public FormValidation doCheckVm(@QueryParameter String value)
 				throws IOException, ServletException {
 			if (value.length() == 0)
-				return FormValidation.error("Please enter the template name");
+				return FormValidation.error("Please enter the VM name");
 			return FormValidation.ok();
 		}
 

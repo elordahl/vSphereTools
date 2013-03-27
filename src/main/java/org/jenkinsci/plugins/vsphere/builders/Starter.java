@@ -69,13 +69,14 @@ public class Starter extends Builder{
 		try{
 			//Need to ensure this server still exists.  If it's deleted
 			//and a job is not opened, it will still try to connect
+			//TODO:  Need to redo this because server object will change after each reboot of jenkins.
 			getDescriptor().getGlobalDescriptor().checkServerExistence(server);
 
 			vsphere = VSphere.connect(server);
 			success = deployFromTemplate(build, launcher, listener);
 
 		} catch(VSphereException e){
-			logger.verboseLogger(jLogger, "Error Cloning to VM: " + e.getMessage(), true);
+			logger.verboseLogger(jLogger, e.getMessage(), true);
 		}
 
 		if(vsphere!=null)

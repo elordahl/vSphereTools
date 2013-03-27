@@ -64,7 +64,7 @@ public class Destroyer extends Builder{
 			killed = killVm(build, launcher, listener);
 
 		} catch (VSphereException e) {
-			logger.verboseLogger(jLogger, "Error deleting VM: " + e.getMessage(), true);
+			logger.verboseLogger(jLogger, e.getMessage(), true);
 		}
 
 		if(vsphere!=null)
