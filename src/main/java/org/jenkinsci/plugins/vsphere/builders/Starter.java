@@ -110,7 +110,9 @@ public class Starter extends Builder{
 			envAction.add("VSPHERE_"+expandedClone, vmIP);
 			build.addAction(envAction);
 			return true;
-		}			
+		}		
+		
+		logger.verboseLogger(jLogger, "Error: Could not get IP for \""+expandedClone+"\" ", true);
 		return false;
 	}
 

@@ -6,6 +6,7 @@ import hudson.Launcher;
 import hudson.model.BuildListener;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.EnvironmentContributingAction;
 import hudson.model.Hudson;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
@@ -14,6 +15,8 @@ import hudson.util.ListBoxModel;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 
@@ -25,33 +28,33 @@ import org.jenkinsci.plugins.vsphere.tools.VSphereLogger;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
-public class MarkTemplate extends Builder {
+public class MarkVM extends Builder {
 
-	private final String vm;
-	private final boolean force;
+	private final String template;
+	private final boolean powerOn;
 	private final Server server;
 	private final String serverName;
 	private final VSphereLogger logger = VSphereLogger.getVSphereLogger();
 	private VSphere vsphere = null;
 
 	@DataBoundConstructor
-	public MarkTemplate(String serverName, String vm, boolean force) throws VSphereException {
+	public MarkVM(String serverName, String template, boolean powerOn) throws VSphereException {
 		this.serverName = serverName;
 		server = getDescriptor().getGlobalDescriptor().getServer(serverName);
-		this.force = force;
-		this.vm = vm;
+		this.powerOn = powerOn;
+		this.template = template;
 	}
 
-	public String getVm() {
-		return vm;
+	public String getTemplate() {
+		return template;
 	}
 
 	public String getServerName(){
 		return serverName;
 	}
 
-	public boolean isForce() {
-		return force;
+	public boolean isPowerOn() {
+		return powerOn;
 	}
 
 	@Override
@@ -67,7 +70,7 @@ public class MarkTemplate extends Builder {
 			getDescriptor().getGlobalDescriptor().checkServerExistence(server);
 
 			vsphere = VSphere.connect(server);
-			changed = markTemplate(build, launcher, listener);
+			changed = markVm(build, launcher, listener);
 
 		} catch (VSphereException e) {
 			logger.verboseLogger(jLogger, e.getMessage(), true);
@@ -82,9 +85,9 @@ public class MarkTemplate extends Builder {
 	/* (non-Javadoc)
 	 * @see hudson.tasks.BuildWrapper#setUp(hudson.model.AbstractBuild, hudson.Launcher, hudson.model.BuildListener)
 	 */
-	private boolean markTemplate(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws VSphereException {
+	private boolean markVm(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws VSphereException {
 		PrintStream jLogger = listener.getLogger();
-		logger.verboseLogger(jLogger, "Converting VM to template. Please wait ...", true);	
+		logger.verboseLogger(jLogger, "Converting template to VM. Please wait ...", true);		
 
 		EnvVars env;
 		try {
@@ -93,10 +96,25 @@ public class MarkTemplate extends Builder {
 			throw new VSphereException(e);
 		}
 		env.overrideAll(build.getBuildVariables()); // Add in matrix axes..
-		String expandedVm = env.expand(vm);
+		String expandedTemplate = env.expand(template);
 
-		vsphere.markAsTemplate(expandedVm, force);
-		logger.verboseLogger(jLogger, "\""+expandedVm+"\" is now a template.", true);
+		vsphere.markAsVm(expandedTemplate);
+		logger.verboseLogger(jLogger, "\""+expandedTemplate+"\" is a VM!", true);
+		
+		if(powerOn){
+			vsphere.startVm(expandedTemplate);
+			String vmIP = vsphere.getIp(expandedTemplate); 
+			if(vmIP!=null){
+				logger.verboseLogger(jLogger, "Got IP for \""+expandedTemplate+"\" ", true);
+				VSphereEnvAction envAction = new VSphereEnvAction();
+				envAction.add("VSPHERE_"+expandedTemplate, vmIP);
+				build.addAction(envAction);
+				return true;
+			}	
+			
+			logger.verboseLogger(jLogger, "Error: Could not get IP for \""+expandedTemplate+"\" ", true);
+			return false;
+		}
 
 		return true;
 	}
@@ -119,7 +137,7 @@ public class MarkTemplate extends Builder {
 		 */
 		@Override
 		public String getDisplayName() {
-			return VSphere.vSphereOutput(Messages.vm_title_MarkTemplate());
+			return VSphere.vSphereOutput(Messages.vm_title_MarkVM());
 		}
 
 		/**
@@ -130,10 +148,10 @@ public class MarkTemplate extends Builder {
 		 * @return
 		 *      Indicates the outcome of the validation. This is sent to the browser.
 		 */
-		public FormValidation doCheckVm(@QueryParameter String value)
+		public FormValidation doCheckTemplate(@QueryParameter String value)
 				throws IOException, ServletException {
 			if (value.length() == 0)
-				return FormValidation.error("Please enter the VM name");
+				return FormValidation.error("Please enter the Template name");
 			return FormValidation.ok();
 		}
 
@@ -150,4 +168,30 @@ public class MarkTemplate extends Builder {
 			return getGlobalDescriptor().doFillServerItems();
 		}
 	}	
+
+
+	//TODO move to own class/file
+	/**
+	 * This class is used to inject the IP value into the build environment
+	 * as a variable so that it can be used with other plugins.
+	 * 
+	 * @author Lordahl
+	 */
+	private static class VSphereEnvAction implements EnvironmentContributingAction {
+		// Decided not to record this data in build.xml, so marked transient:
+		private transient Map<String,String> data = new HashMap<String,String>();
+
+		private void add(String key, String val) {
+			if (data==null) return;
+			data.put(key, val);
+		}
+
+		public void buildEnvVars(AbstractBuild<?,?> build, EnvVars env) {
+			if (data!=null) env.putAll(data);
+		}
+
+		public String getIconFileName() { return null; }
+		public String getDisplayName() { return null; }
+		public String getUrlName() { return null; }
+	}
 }

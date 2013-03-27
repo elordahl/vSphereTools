@@ -18,6 +18,7 @@ import com.vmware.vim25.VirtualMachinePowerState;
 import com.vmware.vim25.VirtualMachineRelocateSpec;
 import com.vmware.vim25.VmConfigFault;
 import com.vmware.vim25.mo.Folder;
+import com.vmware.vim25.mo.HostSystem;
 import com.vmware.vim25.mo.InventoryNavigator;
 import com.vmware.vim25.mo.ResourcePool;
 import com.vmware.vim25.mo.ServiceInstance;
@@ -117,7 +118,11 @@ public class VSphere {
 	public void startVm(String name) throws VSphereException {
 
 		try{
-			String status = getVmByName(name).powerOnVM_Task(null).waitForTask(10000, 10000);
+			VirtualMachine vm = getVmByName(name);
+			if(isPoweredOn(vm))
+				return;
+
+			String status = vm.powerOnVM_Task(null).waitForTask(10000, 10000);
 			if(status==Task.SUCCESS){
 				System.out.println("VM was powered up successfully.");
 				return;
@@ -178,20 +183,27 @@ public class VSphere {
 				return;
 			}
 		}catch(Exception e){
-			throw new VSphereException("Error: Could not mark as Template", e);
+			throw new VSphereException("Error: Could not convert to Template", e);
 		}
 
 		throw new VSphereException("Error: Could not mark as Template. Check it's power state or select \"force.\"");
 	}
 
-	public boolean markAsVm(String name){
+	public void markAsVm(String name) throws VSphereException{
 		try{
-			//getVmByName(name).markAsVirtualMachine(getResourcePoolByName("Build").getMOR(), host);
+			VirtualMachine vm = getVmByName(name);
+			if(!vm.getConfig().template)
+				return;
+
+			vm.markAsVirtualMachine(
+					getResourcePoolByName(Messages.VSphere_pool_default()),
+					getHostByName(Messages.VSphere_host_default())
+					);
+			return;
+
 		}catch(Exception e){
-			e.printStackTrace();
-			return false;
+			throw new VSphereException("Error: Could not convert to VM", e);
 		}
-		return true;
 	}
 
 	/**
@@ -248,6 +260,19 @@ public class VSphere {
 		return (ResourcePool) new InventoryNavigator(
 				si.getRootFolder()).searchManagedEntity(
 						"ResourcePool", poolName);
+	}
+
+	/**
+	 * @param poolName - Name of pool to use
+	 * @return - ResourcePool obect
+	 * @throws InvalidProperty
+	 * @throws RuntimeFault
+	 * @throws RemoteException
+	 */
+	private HostSystem getHostByName(String hostName) throws InvalidProperty, RuntimeFault, RemoteException{
+		return (HostSystem) new InventoryNavigator(
+				si.getRootFolder()).searchManagedEntity(
+						"HostSystem", hostName);
 	}
 
 	/**
