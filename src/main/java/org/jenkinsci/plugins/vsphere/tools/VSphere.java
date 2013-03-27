@@ -1,10 +1,10 @@
 package org.jenkinsci.plugins.vsphere.tools;
 
 
-import java.net.MalformedURLException;
-import org.jenkinsci.plugins.vsphere.Server;
 import java.net.URL;
 import java.rmi.RemoteException;
+
+import org.jenkinsci.plugins.vsphere.Server;
 
 import com.vmware.vim25.FileFault;
 import com.vmware.vim25.InsufficientResourcesFault;
@@ -23,7 +23,6 @@ import com.vmware.vim25.mo.ResourcePool;
 import com.vmware.vim25.mo.ServiceInstance;
 import com.vmware.vim25.mo.Task;
 import com.vmware.vim25.mo.VirtualMachine;
-import com.vmware.vim25.mo.VirtualMachineSnapshot;
 
 
 /**
@@ -35,7 +34,7 @@ public class VSphere {
 	private ServiceInstance si;
 
 	private VSphere(String url, String user, String pw) throws VSphereException{
-		
+
 		try {
 			si = new ServiceInstance(new URL(url), user, pw, true);
 		} catch (Exception e) {
@@ -50,7 +49,7 @@ public class VSphere {
 	public static VSphere connect(Server server) throws VSphereException {
 		return new VSphere(server.getServer(), server.getUser(), server.getPw());
 	}
-	
+
 	public static String vSphereOutput(String msg){
 		return (Messages.VSphereLogger_title()+": ").concat(msg);
 	}
@@ -170,12 +169,11 @@ public class VSphere {
 
 		try{
 			VirtualMachine vm = getVmByName(name);
-			//TODO need to check if already a template
-			//if is already a template, skip
-			//if not template AND
+			if(vm.getConfig().template)
+				return;
 
 			if(isPoweredOff(vm) || force){
-				powerDown(vm);
+				powerDown(vm, force);
 				getVmByName(name).markAsTemplate();
 				return;
 			}
@@ -183,7 +181,7 @@ public class VSphere {
 			throw new VSphereException("Could not mark as Template", e);
 		}
 
-		throw new VSphereException("Could not mark as Template");
+		throw new VSphereException("Could not mark as Template.  Check it's power state or select \"force.\"");
 	}
 
 	public boolean markAsVm(String name){
@@ -260,7 +258,10 @@ public class VSphere {
 	public void destroyVm(String name) throws VSphereException{
 		try{
 			VirtualMachine vm = getVmByName(name);
-			powerDown(vm);
+			if(vm.getConfig().template)
+				throw new VSphereException("Specified name represents a template, not a VM.");
+
+			powerDown(vm, true);
 
 			String status = vm.destroy_Task().waitForTask();
 			if(status==Task.SUCCESS)
@@ -272,8 +273,12 @@ public class VSphere {
 		}catch(Exception e){
 			throw new VSphereException(e);
 		}
-		
+
 		throw new VSphereException("Error destroying VM");
+	}
+
+	private boolean isSuspended(VirtualMachine vm){
+		return (vm.getRuntime().getPowerState() ==  VirtualMachinePowerState.suspended);
 	}
 
 	private boolean isPoweredOn(VirtualMachine vm){
@@ -284,8 +289,8 @@ public class VSphere {
 		return (vm.getRuntime().getPowerState() ==  VirtualMachinePowerState.poweredOff);
 	}
 
-	private void powerDown(VirtualMachine vm) throws VSphereException{
-		if (isPoweredOn(vm)) {
+	private void powerDown(VirtualMachine vm, boolean evenIfSuspended) throws VSphereException{
+		if (isPoweredOn(vm) || (evenIfSuspended && isSuspended(vm))) {
 			String status;
 			try {
 				//TODO is this better?

@@ -114,6 +114,7 @@ public class Destroyer extends Builder{
 		 */
 		public FormValidation doCheckVm(@QueryParameter String value)
 				throws IOException, ServletException {
+			
 			if (value.length() == 0)
 				return FormValidation.error("Please enter the VM name");
 			//TODO check if Vm exists
@@ -142,7 +143,4 @@ public class Destroyer extends Builder{
 			return getGlobalDescriptor().doFillServerItems();
 		}
 	}
-
-
-	//TODO:  Make sure to set a default blank option in case the saved item gets deleted
 }
