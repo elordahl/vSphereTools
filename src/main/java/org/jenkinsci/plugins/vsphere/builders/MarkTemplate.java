@@ -14,6 +14,8 @@ import hudson.util.ListBoxModel;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import javax.servlet.ServletException;
 
@@ -31,15 +33,17 @@ public class MarkTemplate extends Builder {
 	private final boolean force;
 	private final Server server;
 	private final String serverName;
+	private final String description;
 	private final VSphereLogger logger = VSphereLogger.getVSphereLogger();
 	private VSphere vsphere = null;
 
 	@DataBoundConstructor
-	public MarkTemplate(String serverName, String vm, boolean force) throws VSphereException {
+	public MarkTemplate(String serverName, String vm, String description, boolean force) throws VSphereException {
 		this.serverName = serverName;
 		server = getDescriptor().getGlobalDescriptor().getServer(serverName);
 		this.force = force;
 		this.vm = vm;
+		this.description = description;
 	}
 
 	public String getVm() {
@@ -48,6 +52,10 @@ public class MarkTemplate extends Builder {
 
 	public String getServerName(){
 		return serverName;
+	}
+	
+	public String getDescription(){
+		return description;
 	}
 
 	public boolean isForce() {
@@ -92,10 +100,14 @@ public class MarkTemplate extends Builder {
 		} catch (Exception e) {
 			throw new VSphereException(e);
 		}
+		
+		Date date = new Date();
+		SimpleDateFormat df = new SimpleDateFormat("MMM dd, yyyy hh:mm:ss aaa");
+		
 		env.overrideAll(build.getBuildVariables()); // Add in matrix axes..
 		String expandedVm = env.expand(vm);
 
-		vsphere.markAsTemplate(expandedVm, force);
+		vsphere.markAsTemplate(expandedVm, df.format(date), env.expand(description), force);
 		logger.verboseLogger(jLogger, "\""+expandedVm+"\" is now a template.", true);
 
 		return true;

@@ -64,7 +64,7 @@ public class VSphere {
 	 * @return - Virtual Machine object of the new VM
 	 * @throws Exception 
 	 */
-	public void shallowCloneVm(String cloneName, String template, boolean verboseOutput) throws VSphereException {
+	public void shallowCloneVm(String cloneName, String template, boolean powerOn, boolean verboseOutput) throws VSphereException {
 
 		System.out.println("Creating a shallow clone of \""+ template + "\" to \""+cloneName);
 		try{
@@ -81,7 +81,7 @@ public class VSphere {
 
 			VirtualMachineCloneSpec cloneSpec = new VirtualMachineCloneSpec();
 			cloneSpec.setLocation(rel);
-			cloneSpec.setPowerOn(false);
+			cloneSpec.setPowerOn(powerOn);
 			cloneSpec.setTemplate(false);
 			cloneSpec.setSnapshot(sourceVm.getCurrentSnapShot().getMOR());
 
@@ -170,16 +170,17 @@ public class VSphere {
 		throw new VSphereException("Could not take snapshot");
 	}
 
-	public void markAsTemplate(String name, boolean force) throws VSphereException {
+	public void markAsTemplate(String vmName, String snapName, String desc, boolean force) throws VSphereException {
 
 		try{
-			VirtualMachine vm = getVmByName(name);
+			VirtualMachine vm = getVmByName(vmName);
 			if(vm.getConfig().template)
 				return;
 
 			if(isPoweredOff(vm) || force){
 				powerDown(vm, force);
-				getVmByName(name).markAsTemplate();
+				takeSnapshot(vmName, snapName, desc);
+				vm.markAsTemplate();
 				return;
 			}
 		}catch(Exception e){

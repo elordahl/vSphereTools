@@ -34,16 +34,18 @@ public class Starter extends Builder{
 	private final Server server;
 	private final String serverName;
 	private final String clone;
+	private final boolean powerOn;
 	private VSphere vsphere = null;
 	private final VSphereLogger logger = VSphereLogger.getVSphereLogger();
 
 	@DataBoundConstructor
 	public Starter(String serverName, String template,
-			String clone) throws VSphereException {
+			String clone, boolean powerOn) throws VSphereException {
 		this.template = template;
 		this.serverName = serverName;
 		server = getDescriptor().getGlobalDescriptor().getServer(serverName);
 		this.clone = clone;
+		this.powerOn = powerOn;
 	}
 
 
@@ -57,6 +59,13 @@ public class Starter extends Builder{
 
 	public String getServerName(){
 		return serverName;
+	}
+
+	/**
+	 * @return the powerOn
+	 */
+	public boolean isPowerOn() {
+		return powerOn;
 	}
 
 	@Override
@@ -89,7 +98,6 @@ public class Starter extends Builder{
 		PrintStream jLogger = listener.getLogger();
 		logger.verboseLogger(jLogger, "Cloning VM. Please wait ...", true);
 
-
 		EnvVars env;
 		try {
 			env = build.getEnvironment(listener);
@@ -99,8 +107,7 @@ public class Starter extends Builder{
 		env.overrideAll(build.getBuildVariables()); // Add in matrix axes..
 		String expandedClone = env.expand(clone), expandedTemplate = env.expand(template);
 
-		vsphere.shallowCloneVm(expandedClone, expandedTemplate, true);
-		vsphere.startVm(expandedClone);
+		vsphere.shallowCloneVm(expandedClone, expandedTemplate, powerOn, true);
 		logger.verboseLogger(jLogger, "Clone successful! Waiting a maximum of 100 seconds for IP.", true);
 
 		String vmIP = vsphere.getIp(expandedClone); 
