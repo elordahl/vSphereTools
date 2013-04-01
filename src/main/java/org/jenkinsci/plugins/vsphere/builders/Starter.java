@@ -7,7 +7,6 @@ import hudson.model.BuildListener;
 import hudson.model.EnvironmentContributingAction;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.Hudson;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
@@ -43,7 +42,7 @@ public class Starter extends Builder{
 			String clone, boolean powerOn) throws VSphereException {
 		this.template = template;
 		this.serverName = serverName;
-		server = getDescriptor().getGlobalDescriptor().getServer(serverName);
+		server = VSpherePlugin.DescriptorImpl.get().getServer(serverName);
 		this.clone = clone;
 		this.powerOn = powerOn;
 	}
@@ -79,8 +78,7 @@ public class Starter extends Builder{
 			//Need to ensure this server still exists.  If it's deleted
 			//and a job is not opened, it will still try to connect
 			//TODO:  Need to redo this because server object will change after each reboot of jenkins.
-			getDescriptor().getGlobalDescriptor().checkServerExistence(server);
-
+			VSpherePlugin.DescriptorImpl.get().checkServerExistence(server);
 			vsphere = VSphere.connect(server);
 			success = deployFromTemplate(build, launcher, listener);
 
@@ -181,13 +179,8 @@ public class Starter extends Builder{
 			return FormValidation.ok();
 		}
 
-
-		private final VSpherePlugin.DescriptorImpl getGlobalDescriptor() {
-			return Hudson.getInstance().getDescriptorByType(VSpherePlugin.DescriptorImpl.class);
-		}
-
 		public ListBoxModel doFillServerNameItems(){
-			return getGlobalDescriptor().doFillServerItems();
+			return VSpherePlugin.DescriptorImpl.get().doFillServerItems();
 		}
 	}
 

@@ -40,7 +40,7 @@ public class MarkVM extends Builder {
 	@DataBoundConstructor
 	public MarkVM(String serverName, String template, boolean powerOn) throws VSphereException {
 		this.serverName = serverName;
-		server = getDescriptor().getGlobalDescriptor().getServer(serverName);
+		server = VSpherePlugin.DescriptorImpl.get().getServer(serverName);
 		this.powerOn = powerOn;
 		this.template = template;
 	}
@@ -67,7 +67,7 @@ public class MarkVM extends Builder {
 		try {
 			//Need to ensure this server still exists.  If it's deleted
 			//and a job is not opened, it will still try to connect
-			getDescriptor().getGlobalDescriptor().checkServerExistence(server);
+			VSpherePlugin.DescriptorImpl.get().checkServerExistence(server);
 
 			vsphere = VSphere.connect(server);
 			changed = markVm(build, launcher, listener);
@@ -160,12 +160,8 @@ public class MarkVM extends Builder {
 			return true;
 		}
 
-		private final VSpherePlugin.DescriptorImpl getGlobalDescriptor() {
-			return Hudson.getInstance().getDescriptorByType(VSpherePlugin.DescriptorImpl.class);
-		}
-
 		public ListBoxModel doFillServerNameItems(){
-			return getGlobalDescriptor().doFillServerItems();
+			return VSpherePlugin.DescriptorImpl.get().doFillServerItems();
 		}
 	}	
 

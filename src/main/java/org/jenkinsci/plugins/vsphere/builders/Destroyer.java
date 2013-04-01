@@ -36,7 +36,7 @@ public class Destroyer extends Builder{
 	@DataBoundConstructor
 	public Destroyer(String serverName,	String vm) throws VSphereException {
 		this.serverName = serverName;
-		server = getDescriptor().getGlobalDescriptor().getServer(serverName);
+		server = VSpherePlugin.DescriptorImpl.get().getServer(serverName);
 		this.vm = vm;
 	}
 
@@ -58,10 +58,14 @@ public class Destroyer extends Builder{
 		try {
 			//Need to ensure this server still exists.  If it's deleted
 			//and a job is not opened, it will still try to connect
-			getDescriptor().getGlobalDescriptor().checkServerExistence(server);
+			VSpherePlugin.DescriptorImpl.get().checkServerExistence(server);
 
 			vsphere = VSphere.connect(server);
-			killed = killVm(build, launcher, listener);
+			
+			if(VSpherePlugin.DescriptorImpl.allowDelete())
+				killed = killVm(build, launcher, listener);
+			else
+				logger.verboseLogger(jLogger, "Deletion is disabled!", true);
 
 		} catch (VSphereException e) {
 			logger.verboseLogger(jLogger, e.getMessage(), true);
@@ -135,12 +139,8 @@ public class Destroyer extends Builder{
 			return true;
 		}
 
-		private final VSpherePlugin.DescriptorImpl getGlobalDescriptor() {
-			return Hudson.getInstance().getDescriptorByType(VSpherePlugin.DescriptorImpl.class);
-		}
-
 		public ListBoxModel doFillServerNameItems(){
-			return getGlobalDescriptor().doFillServerItems();
+			return VSpherePlugin.DescriptorImpl.get().doFillServerItems();
 		}
 	}
 }

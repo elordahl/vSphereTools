@@ -6,8 +6,11 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.ListBoxModel;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONException;
@@ -69,6 +72,26 @@ public class VSpherePlugin extends Builder {
 
 		public DescriptorImpl () {
 			//super();
+/*			ALLOW_VM_DELETE = false;
+			FileInputStream propFile;
+			try {
+				System.out.println("DIRRRR"+System.getProperty("user.dir"));
+				propFile = new FileInputStream( "myProperties.txt");
+			
+		        Properties p =
+		            new Properties(System.getProperties());
+		        p.load(propFile);
+
+		        // set the system properties
+		        System.setProperties(p);
+		        // display new properties
+		        System.getProperties().list(System.out);
+		        
+		        ALLOW_VM_DELETE = !Boolean.getBoolean(VSpherePlugin.class.getName()+".disableDelete");
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}*/
 			load();
 		}
 
@@ -132,6 +155,16 @@ public class VSpherePlugin extends Builder {
 				throw new VSphereException("Server does not exist in global config! Please re-save your job configuration.");
 		}
 
+		public static DescriptorImpl get() {
+            return Builder.all().get(DescriptorImpl.class);
+        }
+		
+		public static boolean allowDelete() {
+            return ALLOW_VM_DELETE;
+        }
+		
+		private static boolean ALLOW_VM_DELETE = true; //!Boolean.getBoolean(VSpherePlugin.class.getName()+".disableDelete");; 
+		
 		/*	public FormValidation doCheckServers(@QueryParameter ArrayList<Server> servers)
 				throws IOException, ServletException {
 					if (!servers.isEmpty()){
