@@ -72,12 +72,12 @@ public class VSpherePlugin extends Builder {
 
 		public DescriptorImpl () {
 			//super();
-/*			ALLOW_VM_DELETE = false;
+			/*			ALLOW_VM_DELETE = false;
 			FileInputStream propFile;
 			try {
 				System.out.println("DIRRRR"+System.getProperty("user.dir"));
 				propFile = new FileInputStream( "myProperties.txt");
-			
+
 		        Properties p =
 		            new Properties(System.getProperties());
 		        p.load(propFile);
@@ -86,7 +86,7 @@ public class VSpherePlugin extends Builder {
 		        System.setProperties(p);
 		        // display new properties
 		        System.getProperties().list(System.out);
-		        
+
 		        ALLOW_VM_DELETE = !Boolean.getBoolean(VSpherePlugin.class.getName()+".disableDelete");
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
@@ -150,21 +150,25 @@ public class VSpherePlugin extends Builder {
 			return select;
 		}
 
-		public void checkServerExistence(Server server) throws VSphereException {
-			if(!servers.contains(server))
-				throw new VSphereException("Server does not exist in global config! Please re-save your job configuration.");
+		public void checkServerExistence(Server serverToFind) throws VSphereException {
+
+			for (Server server : servers)
+				if(server.getHash()==serverToFind.getHash())
+					return;
+
+			throw new VSphereException("Server does not exist in global config! Please re-save your job configuration.");
 		}
 
 		public static DescriptorImpl get() {
-            return Builder.all().get(DescriptorImpl.class);
-        }
-		
+			return Builder.all().get(DescriptorImpl.class);
+		}
+
 		public static boolean allowDelete() {
-            return ALLOW_VM_DELETE;
-        }
-		
+			return ALLOW_VM_DELETE;
+		}
+
 		private static boolean ALLOW_VM_DELETE = true; //!Boolean.getBoolean(VSpherePlugin.class.getName()+".disableDelete");; 
-		
+
 		/*	public FormValidation doCheckServers(@QueryParameter ArrayList<Server> servers)
 				throws IOException, ServletException {
 					if (!servers.isEmpty()){

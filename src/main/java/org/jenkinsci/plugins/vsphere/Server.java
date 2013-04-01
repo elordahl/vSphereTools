@@ -5,6 +5,7 @@ import hudson.model.Descriptor;
 import hudson.util.Secret;
 import net.sf.json.JSONObject;
 
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public class Server extends AbstractDescribableImpl<Server> {
@@ -15,6 +16,15 @@ public class Server extends AbstractDescribableImpl<Server> {
 
 	public final String getName() {
 		return name;
+	}
+
+	public final int getHash() {
+		return new HashCodeBuilder(67, 89).
+		append(getName()).
+		append(getUser()).
+		append(getServer()).
+		append(getEncryptedPassphrase()).
+		toHashCode();
 	}
 
 	public final String getServer() {
@@ -59,6 +69,7 @@ public class Server extends AbstractDescribableImpl<Server> {
 	public static class DescriptorImpl extends Descriptor<Server> {
 		public String getDisplayName() { return ""; }
 	}
+
 
 	/*public FormValidation doTest(@QueryParameter String server,
 			@QueryParameter String user, 

@@ -212,12 +212,9 @@ public class VSphere {
 	 * 
 	 * @param name - VirtualMachine name of which IP is returned
 	 * @return - String containing IP address
-	 * @throws InterruptedException
-	 * @throws RemoteException 
-	 * @throws RuntimeFault 
-	 * @throws InvalidProperty 
+	 * @throws VSphereException 
 	 */
-	public String getIp(String name) {
+	public String getIp(String name) throws VSphereException {
 		try{
 			VirtualMachine vm = getVmByName(name);
 			final int MAX_TRIES = 20;
@@ -231,7 +228,7 @@ public class VSphere {
 			}
 
 		}catch (Exception e){
-			e.printStackTrace();
+			throw new VSphereException(e);
 		}
 		return null;
 	}
