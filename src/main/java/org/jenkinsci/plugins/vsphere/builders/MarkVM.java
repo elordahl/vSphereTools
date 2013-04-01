@@ -107,7 +107,7 @@ public class MarkVM extends Builder {
 			if(vmIP!=null){
 				logger.verboseLogger(jLogger, "Got IP for \""+expandedTemplate+"\" ", true);
 				VSphereEnvAction envAction = new VSphereEnvAction();
-				envAction.add("VSPHERE_"+expandedTemplate, vmIP);
+				envAction.add("VSPHERE_IP", vmIP);
 				build.addAction(envAction);
 				return true;
 			}	

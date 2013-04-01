@@ -112,7 +112,7 @@ public class Starter extends Builder{
 		if(vmIP!=null){
 			logger.verboseLogger(jLogger, "Got IP for \""+expandedClone+"\" ", true);
 			VSphereEnvAction envAction = new VSphereEnvAction();
-			envAction.add("VSPHERE_"+expandedClone, vmIP);
+			envAction.add("VSPHERE_IP", vmIP);
 			build.addAction(envAction);
 			return true;
 		}		
