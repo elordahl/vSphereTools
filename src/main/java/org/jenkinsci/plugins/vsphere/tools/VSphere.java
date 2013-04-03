@@ -31,16 +31,14 @@ import com.vmware.vim25.mo.VirtualMachine;
  *
  */
 public class VSphere {
-
 	private ServiceInstance si;
 
 	private VSphere(String url, String user, String pw) throws VSphereException{
-
 		try {
 			si = new ServiceInstance(new URL(url), user, pw, true);
 		} catch (Exception e) {
 			throw new VSphereException(e);
-		}   
+		} 
 	}
 
 	/**
@@ -64,14 +62,13 @@ public class VSphere {
 	 * @return - Virtual Machine object of the new VM
 	 * @throws Exception 
 	 */
-	public void shallowCloneVm(String cloneName, String template, boolean powerOn, boolean verboseOutput) throws VSphereException {
+	public VirtualMachine shallowCloneVm(String cloneName, String template, boolean powerOn) throws VSphereException {
 
 		System.out.println("Creating a shallow clone of \""+ template + "\" to \""+cloneName);
 		try{
 			VirtualMachine sourceVm = getVmByName(template);
 
 			if(sourceVm==null) {
-				disconnect();
 				throw new VSphereException("No VM " + template + " found");
 			}
 
@@ -92,11 +89,11 @@ public class VSphere {
 			String status = task.waitForTask();
 			if(status==TaskInfoState.success.toString()) {
 				System.out.println("VM got cloned successfully.");
-				return;
+				return getVmByName(cloneName);
 			}
 
 		}catch(Exception e){
-			throw new VSphereException("Couldnt Clone: ", e);
+			throw new VSphereException(e);
 		}
 
 		throw new VSphereException("Error cloning \""+template+"!\" Does \""+cloneName+"\" already exist?");
@@ -190,17 +187,16 @@ public class VSphere {
 		throw new VSphereException("Error: Could not mark as Template. Check it's power state or select \"force.\"");
 	}
 
-	public void markAsVm(String name) throws VSphereException{
+	public VirtualMachine markAsVm(String name) throws VSphereException{
 		try{
 			VirtualMachine vm = getVmByName(name);
-			if(!vm.getConfig().template)
-				return;
-
-			vm.markAsVirtualMachine(
-					getResourcePoolByName(Messages.VSphere_pool_default()),
-					getHostByName(Messages.VSphere_host_default())
-					);
-			return;
+			if(vm.getConfig().template){
+				vm.markAsVirtualMachine(
+						getResourcePoolByName(Messages.VSphere_pool_default()),
+						getHostByName(Messages.VSphere_host_default())
+				);
+			}
+			return vm;
 
 		}catch(Exception e){
 			throw new VSphereException("Error: Could not convert to VM", e);
@@ -214,21 +210,23 @@ public class VSphere {
 	 * @return - String containing IP address
 	 * @throws VSphereException 
 	 */
-	public String getIp(String name) throws VSphereException {
-		try{
-			VirtualMachine vm = getVmByName(name);
-			final int MAX_TRIES = 20;
-			final int SLEEP_SECONDS = 5;
+	public String getIp(VirtualMachine vm) throws VSphereException {
 
-			for(int count=1; count<MAX_TRIES+1; ++count){
-				if(vm.getGuest().getIpAddress()!=null){
-					return vm.getGuest().getIpAddress();
-				}
-				Thread.sleep(SLEEP_SECONDS * 1000);
+		if (vm==null)
+			throw new VSphereException("vm is null");
+
+		final int MAX_TRIES = 20;
+		final int SLEEP_SECONDS = 5;
+
+		for(int count=0; count<MAX_TRIES; ++count){
+			if(vm.getGuest().getIpAddress()!=null){
+				return vm.getGuest().getIpAddress();
 			}
-
-		}catch (Exception e){
-			throw new VSphereException(e);
+			try {
+				Thread.sleep(SLEEP_SECONDS * 1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
 		return null;
 	}
@@ -240,7 +238,7 @@ public class VSphere {
 	 * @throws RuntimeFault
 	 * @throws RemoteException
 	 */
-	private VirtualMachine getVmByName(String vmName) throws InvalidProperty, RuntimeFault, RemoteException{
+	private VirtualMachine getVmByName(String vmName) throws InvalidProperty, RuntimeFault, RemoteException {
 
 		return (VirtualMachine) new InventoryNavigator(
 				si.getRootFolder()).searchManagedEntity(
@@ -254,7 +252,7 @@ public class VSphere {
 	 * @throws RuntimeFault
 	 * @throws RemoteException
 	 */
-	private ResourcePool getResourcePoolByName(String poolName) throws InvalidProperty, RuntimeFault, RemoteException{
+	private ResourcePool getResourcePoolByName(final String poolName) throws InvalidProperty, RuntimeFault, RemoteException {
 		return (ResourcePool) new InventoryNavigator(
 				si.getRootFolder()).searchManagedEntity(
 						"ResourcePool", poolName);
@@ -267,7 +265,7 @@ public class VSphere {
 	 * @throws RuntimeFault
 	 * @throws RemoteException
 	 */
-	private HostSystem getHostByName(String hostName) throws InvalidProperty, RuntimeFault, RemoteException{
+	private HostSystem getHostByName(final String hostName) throws InvalidProperty, RuntimeFault, RemoteException {
 		return (HostSystem) new InventoryNavigator(
 				si.getRootFolder()).searchManagedEntity(
 						"HostSystem", hostName);
@@ -281,6 +279,11 @@ public class VSphere {
 	public void destroyVm(String name) throws VSphereException{
 		try{
 			VirtualMachine vm = getVmByName(name);
+			if(vm==null){
+				System.out.println("VM does not exist, or already deleted!");
+				return;
+			}
+			
 			if(vm.getConfig().template)
 				throw new VSphereException("Error: Specified name represents a template, not a VM.");
 
@@ -335,11 +338,6 @@ public class VSphere {
 
 		throw new VSphereException("Machine could not be powered down!");
 	}
-
-	/**
-	 * Logs out of the connection vSphere Session
-	 */
-	public void disconnect() {
-		si.getServerConnection().logout();
-	}
+	
+	//TODO:  Add disconnect
 }

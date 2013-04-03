@@ -4,10 +4,9 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.BuildListener;
+import hudson.model.EnvironmentContributingAction;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.EnvironmentContributingAction;
-import hudson.model.Hudson;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
@@ -27,6 +26,8 @@ import org.jenkinsci.plugins.vsphere.tools.VSphereException;
 import org.jenkinsci.plugins.vsphere.tools.VSphereLogger;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+
+import com.vmware.vim25.mo.VirtualMachine;
 
 public class MarkVM extends Builder {
 
@@ -76,9 +77,6 @@ public class MarkVM extends Builder {
 			logger.verboseLogger(jLogger, e.getMessage(), true);
 		}
 
-		if(vsphere!=null)
-			vsphere.disconnect();
-
 		return changed;
 	}
 
@@ -95,22 +93,24 @@ public class MarkVM extends Builder {
 		} catch (Exception e) {
 			throw new VSphereException(e);
 		}
+		
+		//TODO:  take in a comma delimited list and convert all
 		env.overrideAll(build.getBuildVariables()); // Add in matrix axes..
 		String expandedTemplate = env.expand(template);
 
-		vsphere.markAsVm(expandedTemplate);
+		VirtualMachine vm = vsphere.markAsVm(expandedTemplate);
 		logger.verboseLogger(jLogger, "\""+expandedTemplate+"\" is a VM!", true);
 		
 		if(powerOn){
 			vsphere.startVm(expandedTemplate);
-			String vmIP = vsphere.getIp(expandedTemplate); 
+			String vmIP = vsphere.getIp(vm); 
 			if(vmIP!=null){
 				logger.verboseLogger(jLogger, "Got IP for \""+expandedTemplate+"\" ", true);
 				VSphereEnvAction envAction = new VSphereEnvAction();
 				envAction.add("VSPHERE_IP", vmIP);
 				build.addAction(envAction);
 				return true;
-			}	
+			}
 			
 			logger.verboseLogger(jLogger, "Error: Could not get IP for \""+expandedTemplate+"\" ", true);
 			return false;

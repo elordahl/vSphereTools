@@ -27,6 +27,8 @@ import org.jenkinsci.plugins.vsphere.tools.VSphereLogger;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
+import com.vmware.vim25.mo.VirtualMachine;
+
 public class Starter extends Builder{
 
 	private final String template;
@@ -86,9 +88,6 @@ public class Starter extends Builder{
 			logger.verboseLogger(jLogger, e.getMessage(), true);
 		}
 
-		if(vsphere!=null)
-			vsphere.disconnect();
-
 		return success;
 	}
 
@@ -105,17 +104,18 @@ public class Starter extends Builder{
 		env.overrideAll(build.getBuildVariables()); // Add in matrix axes..
 		String expandedClone = env.expand(clone), expandedTemplate = env.expand(template);
 
-		vsphere.shallowCloneVm(expandedClone, expandedTemplate, powerOn, true);
+		VirtualMachine vm = vsphere.shallowCloneVm(expandedClone, expandedTemplate, powerOn);
 		logger.verboseLogger(jLogger, "Clone successful! Waiting a maximum of 100 seconds for IP.", true);
 
-		String vmIP = vsphere.getIp(expandedClone); 
+		String vmIP = vsphere.getIp(vm);
+		
 		if(vmIP!=null){
 			logger.verboseLogger(jLogger, "Got IP for \""+expandedClone+"\" ", true);
 			VSphereEnvAction envAction = new VSphereEnvAction();
 			envAction.add("VSPHERE_IP", vmIP);
 			build.addAction(envAction);
 			return true;
-		}		
+		}
 		
 		logger.verboseLogger(jLogger, "Error: Could not get IP for \""+expandedClone+"\" ", true);
 		return false;

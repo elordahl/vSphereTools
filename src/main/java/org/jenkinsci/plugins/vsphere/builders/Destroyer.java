@@ -6,7 +6,6 @@ import hudson.Launcher;
 import hudson.model.BuildListener;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.Hudson;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
@@ -70,9 +69,6 @@ public class Destroyer extends Builder{
 		} catch (VSphereException e) {
 			logger.verboseLogger(jLogger, e.getMessage(), true);
 		}
-
-		if(vsphere!=null)
-			vsphere.disconnect();
 
 		return killed;
 	}

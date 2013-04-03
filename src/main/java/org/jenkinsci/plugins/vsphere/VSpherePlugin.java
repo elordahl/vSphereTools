@@ -140,10 +140,6 @@ public class VSpherePlugin extends Builder {
 		public ListBoxModel doFillServerItems(){
 			ListBoxModel select = new ListBoxModel(servers.size());
 
-			//TODO:  If you save this option in form, Exception occurs. fix me
-			//Add blank element for first default/
-			select.add("Select a server...", "");
-
 			for(Server server : servers){
 				select.add(server.getName());
 			}
