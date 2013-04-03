@@ -83,9 +83,15 @@ public class Starter extends Builder{
 			VSpherePlugin.DescriptorImpl.get().checkServerExistence(server);
 			vsphere = VSphere.connect(server);
 			success = deployFromTemplate(build, launcher, listener);
-
 		} catch(VSphereException e){
 			logger.verboseLogger(jLogger, e.getMessage(), true);
+		}
+
+		try {
+			if(vsphere!=null)
+				vsphere.disconnect();
+		} catch (VSphereException e) {
+			e.printStackTrace(jLogger);
 		}
 
 		return success;
@@ -108,7 +114,7 @@ public class Starter extends Builder{
 		logger.verboseLogger(jLogger, "Clone successful! Waiting a maximum of 100 seconds for IP.", true);
 
 		String vmIP = vsphere.getIp(vm);
-		
+
 		if(vmIP!=null){
 			logger.verboseLogger(jLogger, "Got IP for \""+expandedClone+"\" ", true);
 			VSphereEnvAction envAction = new VSphereEnvAction();
@@ -116,7 +122,7 @@ public class Starter extends Builder{
 			build.addAction(envAction);
 			return true;
 		}
-		
+
 		logger.verboseLogger(jLogger, "Error: Could not get IP for \""+expandedClone+"\" ", true);
 		return false;
 	}
@@ -158,7 +164,7 @@ public class Starter extends Builder{
 		 *      Indicates the outcome of the validation. This is sent to the browser.
 		 */
 		public FormValidation doCheckTemplate(@QueryParameter String value)
-				throws IOException, ServletException {
+		throws IOException, ServletException {
 			if (value.length() == 0)
 				return FormValidation.error("Please enter the template name");
 			return FormValidation.ok();
@@ -173,7 +179,7 @@ public class Starter extends Builder{
 		 *      Indicates the outcome of the validation. This is sent to the browser.
 		 */
 		public FormValidation doCheckClone(@QueryParameter String value)
-				throws IOException, ServletException {
+		throws IOException, ServletException {
 			if (value.length() == 0)
 				return FormValidation.error("Please enter the clone name");
 			return FormValidation.ok();

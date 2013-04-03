@@ -77,6 +77,13 @@ public class MarkVM extends Builder {
 			logger.verboseLogger(jLogger, e.getMessage(), true);
 		}
 
+		try {
+			if(vsphere!=null)
+				vsphere.disconnect();
+		} catch (VSphereException e) {
+			e.printStackTrace(jLogger);
+		}
+
 		return changed;
 	}
 
@@ -93,14 +100,14 @@ public class MarkVM extends Builder {
 		} catch (Exception e) {
 			throw new VSphereException(e);
 		}
-		
+
 		//TODO:  take in a comma delimited list and convert all
 		env.overrideAll(build.getBuildVariables()); // Add in matrix axes..
 		String expandedTemplate = env.expand(template);
 
 		VirtualMachine vm = vsphere.markAsVm(expandedTemplate);
 		logger.verboseLogger(jLogger, "\""+expandedTemplate+"\" is a VM!", true);
-		
+
 		if(powerOn){
 			vsphere.startVm(expandedTemplate);
 			String vmIP = vsphere.getIp(vm); 
@@ -111,7 +118,7 @@ public class MarkVM extends Builder {
 				build.addAction(envAction);
 				return true;
 			}
-			
+
 			logger.verboseLogger(jLogger, "Error: Could not get IP for \""+expandedTemplate+"\" ", true);
 			return false;
 		}
@@ -149,7 +156,7 @@ public class MarkVM extends Builder {
 		 *      Indicates the outcome of the validation. This is sent to the browser.
 		 */
 		public FormValidation doCheckTemplate(@QueryParameter String value)
-				throws IOException, ServletException {
+		throws IOException, ServletException {
 			if (value.length() == 0)
 				return FormValidation.error("Please enter the Template name");
 			return FormValidation.ok();

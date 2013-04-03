@@ -52,7 +52,7 @@ public class MarkTemplate extends Builder {
 	public String getServerName(){
 		return serverName;
 	}
-	
+
 	public String getDescription(){
 		return description;
 	}
@@ -80,6 +80,13 @@ public class MarkTemplate extends Builder {
 			logger.verboseLogger(jLogger, e.getMessage(), true);
 		}
 
+		try {
+			if(vsphere!=null)
+				vsphere.disconnect();
+		} catch (VSphereException e) {
+			e.printStackTrace(jLogger);
+		}
+
 		return changed;
 	}
 
@@ -96,10 +103,10 @@ public class MarkTemplate extends Builder {
 		} catch (Exception e) {
 			throw new VSphereException(e);
 		}
-		
+
 		Date date = new Date();
 		SimpleDateFormat df = new SimpleDateFormat("MMM dd, yyyy hh:mm:ss aaa");
-		
+
 		env.overrideAll(build.getBuildVariables()); // Add in matrix axes..
 		String expandedVm = env.expand(vm);
 
@@ -139,7 +146,7 @@ public class MarkTemplate extends Builder {
 		 *      Indicates the outcome of the validation. This is sent to the browser.
 		 */
 		public FormValidation doCheckVm(@QueryParameter String value)
-				throws IOException, ServletException {
+		throws IOException, ServletException {
 			if (value.length() == 0)
 				return FormValidation.error("Please enter the VM name");
 			return FormValidation.ok();

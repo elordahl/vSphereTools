@@ -69,6 +69,13 @@ public class Destroyer extends Builder{
 		} catch (VSphereException e) {
 			logger.verboseLogger(jLogger, e.getMessage(), true);
 		}
+		
+		try {
+			if(vsphere!=null)
+				vsphere.disconnect();
+		} catch (VSphereException e) {
+			e.printStackTrace(jLogger);
+		}
 
 		return killed;
 	}

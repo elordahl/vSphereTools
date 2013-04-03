@@ -96,6 +96,7 @@ public class VSphere {
 			throw new VSphereException(e);
 		}
 
+		
 		throw new VSphereException("Error cloning \""+template+"!\" Does \""+cloneName+"\" already exist?");
 	}	  
 
@@ -339,5 +340,12 @@ public class VSphere {
 		throw new VSphereException("Machine could not be powered down!");
 	}
 	
-	//TODO:  Add disconnect
+	public void disconnect() throws VSphereException{
+		try {
+			si.getSessionManager().logout();
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new VSphereException(e);
+		}
+	}
 }
