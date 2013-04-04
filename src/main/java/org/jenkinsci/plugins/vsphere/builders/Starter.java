@@ -91,7 +91,7 @@ public class Starter extends Builder{
 			if(vsphere!=null)
 				vsphere.disconnect();
 		} catch (VSphereException e) {
-			e.printStackTrace(jLogger);
+			logger.verboseLogger(jLogger, "Error logging out: "+e.getMessage(), true);
 		}
 
 		return success;

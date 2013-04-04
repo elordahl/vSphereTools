@@ -69,7 +69,11 @@ public class VSphere {
 			VirtualMachine sourceVm = getVmByName(template);
 
 			if(sourceVm==null) {
-				throw new VSphereException("No VM " + template + " found");
+				throw new VSphereException("No template " + template + " found");
+			}
+			
+			if(getVmByName(cloneName)!=null){
+				throw new VSphereException("VM " + cloneName + " already exists");
 			}
 
 			VirtualMachineRelocateSpec rel  = new VirtualMachineRelocateSpec();
