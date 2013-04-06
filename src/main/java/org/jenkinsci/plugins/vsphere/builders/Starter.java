@@ -87,13 +87,6 @@ public class Starter extends Builder{
 			logger.verboseLogger(jLogger, e.getMessage(), true);
 		}
 
-		try {
-			if(vsphere!=null)
-				vsphere.disconnect();
-		} catch (VSphereException e) {
-			logger.verboseLogger(jLogger, "Error logging out: "+e.getMessage(), true);
-		}
-
 		return success;
 	}
 
@@ -111,8 +104,15 @@ public class Starter extends Builder{
 		String expandedClone = env.expand(clone), expandedTemplate = env.expand(template);
 
 		VirtualMachine vm = vsphere.shallowCloneVm(expandedClone, expandedTemplate, powerOn);
-		logger.verboseLogger(jLogger, "Clone successful! Waiting a maximum of 100 seconds for IP.", true);
+		if(vm==null)
+			throw new VSphereException("VM is null");
+		
+		if(!powerOn){
+			logger.verboseLogger(jLogger, "Clone successful!");
+			return true;
+		}
 
+		logger.verboseLogger(jLogger, "Clone successful! Waiting a maximum of 100 seconds for IP.", true);
 		String vmIP = vsphere.getIp(vm);
 
 		if(vmIP!=null){

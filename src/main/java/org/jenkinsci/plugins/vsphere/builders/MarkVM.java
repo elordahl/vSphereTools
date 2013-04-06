@@ -77,13 +77,6 @@ public class MarkVM extends Builder {
 			logger.verboseLogger(jLogger, e.getMessage(), true);
 		}
 
-		try {
-			if(vsphere!=null)
-				vsphere.disconnect();
-		} catch (VSphereException e) {
-			logger.verboseLogger(jLogger, "Error logging out: "+e.getMessage(), true);
-		}
-
 		return changed;
 	}
 

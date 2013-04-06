@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.vsphere.tools;
 
 
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.rmi.RemoteException;
 
@@ -31,14 +32,21 @@ import com.vmware.vim25.mo.VirtualMachine;
  *
  */
 public class VSphere {
-	private ServiceInstance si;
-
+	private final URL url;
+	private final String session;
+	
 	private VSphere(String url, String user, String pw) throws VSphereException{
+		
 		try {
-			si = new ServiceInstance(new URL(url), user, pw, true);
+			this.url = new URL(url);
+			this.session = (new ServiceInstance(this.url, user, pw, true)).getServerConnection().getSessionStr();
 		} catch (Exception e) {
 			throw new VSphereException(e);
-		} 
+		}
+	}
+
+	private ServiceInstance getServiceInstance() throws RemoteException, MalformedURLException{
+		return new ServiceInstance(url, session, true);
 	}
 
 	/**
@@ -71,7 +79,7 @@ public class VSphere {
 			if(sourceVm==null) {
 				throw new VSphereException("No template " + template + " found");
 			}
-			
+
 			if(getVmByName(cloneName)!=null){
 				throw new VSphereException("VM " + cloneName + " already exists");
 			}
@@ -100,7 +108,6 @@ public class VSphere {
 			throw new VSphereException(e);
 		}
 
-		
 		throw new VSphereException("Error cloning \""+template+"!\" Does \""+cloneName+"\" already exist?");
 	}	  
 
@@ -242,11 +249,13 @@ public class VSphere {
 	 * @throws InvalidProperty
 	 * @throws RuntimeFault
 	 * @throws RemoteException
+	 * @throws MalformedURLException 
+	 * @throws VSphereException 
 	 */
-	private VirtualMachine getVmByName(String vmName) throws InvalidProperty, RuntimeFault, RemoteException {
+	private VirtualMachine getVmByName(String vmName) throws InvalidProperty, RuntimeFault, RemoteException, MalformedURLException {
 
 		return (VirtualMachine) new InventoryNavigator(
-				si.getRootFolder()).searchManagedEntity(
+				getServiceInstance().getRootFolder()).searchManagedEntity(
 						"VirtualMachine", vmName);
 	}
 
@@ -256,10 +265,12 @@ public class VSphere {
 	 * @throws InvalidProperty
 	 * @throws RuntimeFault
 	 * @throws RemoteException
+	 * @throws MalformedURLException 
+	 * @throws VSphereException 
 	 */
-	private ResourcePool getResourcePoolByName(final String poolName) throws InvalidProperty, RuntimeFault, RemoteException {
+	private ResourcePool getResourcePoolByName(final String poolName) throws InvalidProperty, RuntimeFault, RemoteException, MalformedURLException {
 		return (ResourcePool) new InventoryNavigator(
-				si.getRootFolder()).searchManagedEntity(
+				getServiceInstance().getRootFolder()).searchManagedEntity(
 						"ResourcePool", poolName);
 	}
 
@@ -269,10 +280,12 @@ public class VSphere {
 	 * @throws InvalidProperty
 	 * @throws RuntimeFault
 	 * @throws RemoteException
+	 * @throws MalformedURLException 
+	 * @throws VSphereException 
 	 */
-	private HostSystem getHostByName(final String hostName) throws InvalidProperty, RuntimeFault, RemoteException {
+	private HostSystem getHostByName(final String hostName) throws InvalidProperty, RuntimeFault, RemoteException, MalformedURLException {
 		return (HostSystem) new InventoryNavigator(
-				si.getRootFolder()).searchManagedEntity(
+				getServiceInstance().getRootFolder()).searchManagedEntity(
 						"HostSystem", hostName);
 	}
 
@@ -288,7 +301,7 @@ public class VSphere {
 				System.out.println("VM does not exist, or already deleted!");
 				return;
 			}
-			
+
 			if(vm.getConfig().template)
 				throw new VSphereException("Error: Specified name represents a template, not a VM.");
 
@@ -342,14 +355,5 @@ public class VSphere {
 		}
 
 		throw new VSphereException("Machine could not be powered down!");
-	}
-	
-	public void disconnect() throws VSphereException{
-		try {
-			si.getSessionManager().logout();
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw new VSphereException(e);
-		}
 	}
 }
