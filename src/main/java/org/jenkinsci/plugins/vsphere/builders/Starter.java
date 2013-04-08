@@ -112,7 +112,8 @@ public class Starter extends Builder{
 			return true;
 		}
 
-		logger.verboseLogger(jLogger, "Clone successful! Waiting a maximum of 100 seconds for IP.", true);
+		//TODO: Removing hardcoding of wait time
+		logger.verboseLogger(jLogger, "Clone successful! Waiting a maximum of 200 seconds for IP.", true);
 		String vmIP = vsphere.getIp(vm);
 
 		if(vmIP!=null){

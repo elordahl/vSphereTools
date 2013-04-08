@@ -227,7 +227,8 @@ public class VSphere {
 		if (vm==null)
 			throw new VSphereException("vm is null");
 
-		final int MAX_TRIES = 20;
+		//TODO move this to config file or GLOBAL PARAM
+		final int MAX_TRIES = 40;
 		final int SLEEP_SECONDS = 5;
 
 		for(int count=0; count<MAX_TRIES; ++count){
