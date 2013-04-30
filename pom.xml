@@ -7,9 +7,9 @@
 		<relativePath/> 
   </parent>
 
-  <groupId>vsphereCloud</groupId>
-  <artifactId>VSphereCloud</artifactId>
-  <version>0.1</version>
+  <artifactId>vSphereTools</artifactId>
+  <version>0.2-SNAPSHOT</version>
+  <name>vSphere Tools Plugin</name>
   <packaging>hpi</packaging>
   
   <!-- get every artifact through maven.glassfish.org, which proxies all the artifacts that we need -->
@@ -35,4 +35,17 @@
       <version>5.0.0</version>
      </dependency>
   </dependencies>
+  
+  <developers>
+    <developer>
+      <id>elordahl</id>
+      <name>Eric Lordahl</name>
+    </developer>
+  </developers>
+  <scm>
+    <connection>scm:git:ssh://github.com/jenkinsci/VSphereTools.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/jenkinsci/VSphereTools.git</developerConnection>
+    <url>https://github.com/jenkinsci/VSphereTools</url>
+  </scm>
+  
 </project>

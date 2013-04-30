@@ -50,7 +50,7 @@ public class VSphere {
 	}
 
 	/**
-	 * Initiates Connection to XenServer
+	 * Initiates Connection to vSphere Server
 	 * @throws VSphereException 
 	 */
 	public static VSphere connect(Server server) throws VSphereException {
@@ -163,22 +163,6 @@ public class VSphere {
 		return true;
 	}
 
-
-	public void takeSnapshotWithMemory(String name, String snapshot, String description) throws VSphereException{
-
-		try {
-
-			Task task = getVmByName(name).createSnapshot_Task(snapshot, description, true, false);
-			if (task.waitForTask()==Task.SUCCESS) {
-				return;
-			}
-		} catch (Exception e) {
-			throw new VSphereException("Could not take snapshot", e);
-		}
-
-		throw new VSphereException("Could not take snapshot");
-	}
-
 	public void markAsTemplate(String vmName, String snapName, String desc, boolean force) throws VSphereException {
 
 		try{
@@ -227,16 +211,12 @@ public class VSphere {
 		if (vm==null)
 			throw new VSphereException("vm is null");
 
-		//TODO move this to config file or GLOBAL PARAM
-		final int MAX_TRIES = 40;
-		final int SLEEP_SECONDS = 5;
-
-		for(int count=0; count<MAX_TRIES; ++count){
+		for(int count=0; count<VSphereConstants.IP_MAX_TRIES; ++count){
 			if(vm.getGuest().getIpAddress()!=null){
 				return vm.getGuest().getIpAddress();
 			}
 			try {
-				Thread.sleep(SLEEP_SECONDS * 1000);
+				Thread.sleep(VSphereConstants.IP_MAX_SECONDS * 1000);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
@@ -295,10 +275,12 @@ public class VSphere {
 	 * @param vm - VM object to destroy
 	 * @throws InterruptedException 
 	 */
-	public void destroyVm(String name) throws VSphereException{
+	public void destroyVm(String name, boolean failOnNoExist) throws VSphereException{
 		try{
 			VirtualMachine vm = getVmByName(name);
 			if(vm==null){
+				if(failOnNoExist) throw new VSphereException("VM does not exist");
+				
 				System.out.println("VM does not exist, or already deleted!");
 				return;
 			}
@@ -357,4 +339,5 @@ public class VSphere {
 
 		throw new VSphereException("Machine could not be powered down!");
 	}
+
 }

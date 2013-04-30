@@ -29,18 +29,24 @@ public class Destroyer extends Builder{
 	private final String vm;
 	private final Server server;
 	private final String serverName;
+	private final boolean failOnNoExist;
 	private VSphere vsphere = null;
 	private final VSphereLogger logger = VSphereLogger.getVSphereLogger();
 
 	@DataBoundConstructor
-	public Destroyer(String serverName,	String vm) throws VSphereException {
+	public Destroyer(String serverName,	String vm, boolean failOnNoExist) throws VSphereException {
 		this.serverName = serverName;
+		this.failOnNoExist = failOnNoExist;
 		server = VSpherePlugin.DescriptorImpl.get().getServer(serverName);
 		this.vm = vm;
 	}
 
 	public String getVm() {
 		return vm;
+	}
+	
+	public boolean isFailOnNoExist(){
+		return failOnNoExist;
 	}
 
 	public String getServerName(){
@@ -86,7 +92,7 @@ public class Destroyer extends Builder{
 		String expandedVm = env.expand(vm);
 
 		logger.verboseLogger(jLogger, "Destroying VM \""+expandedVm+".\" Please wait ...", true);
-		vsphere.destroyVm(expandedVm);
+		vsphere.destroyVm(expandedVm, failOnNoExist);
 		logger.verboseLogger(jLogger, "Destroyed!", true);
 
 		return true;

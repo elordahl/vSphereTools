@@ -22,6 +22,7 @@ import javax.servlet.ServletException;
 import org.jenkinsci.plugins.vsphere.Server;
 import org.jenkinsci.plugins.vsphere.VSpherePlugin;
 import org.jenkinsci.plugins.vsphere.tools.VSphere;
+import org.jenkinsci.plugins.vsphere.tools.VSphereConstants;
 import org.jenkinsci.plugins.vsphere.tools.VSphereException;
 import org.jenkinsci.plugins.vsphere.tools.VSphereLogger;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -113,7 +114,8 @@ public class Starter extends Builder{
 		}
 
 		//TODO: Removing hardcoding of wait time
-		logger.verboseLogger(jLogger, "Clone successful! Waiting a maximum of 200 seconds for IP.", true);
+		logger.verboseLogger(jLogger, "Clone successful! Waiting a maximum of " +
+				VSphereConstants.IP_MAX_SECONDS * VSphereConstants.IP_MAX_TRIES +" seconds for IP.", true);
 		String vmIP = vsphere.getIp(vm);
 
 		if(vmIP!=null){

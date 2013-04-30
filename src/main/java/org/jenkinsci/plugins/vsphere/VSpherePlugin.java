@@ -20,7 +20,7 @@ import org.jenkinsci.plugins.vsphere.tools.VSphereException;
 import org.kohsuke.stapler.StaplerRequest;
 
 /**
- * Descriptor for {@link XenCloudBuilder}. Used as a singleton.
+ * Descriptor for {@link VSpherePlugin}. Used as a singleton.
  * The class is marked as public so that it can be accessed from views.
  *
  * <p>
