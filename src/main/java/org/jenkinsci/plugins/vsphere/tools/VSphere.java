@@ -50,7 +50,7 @@ public class VSphere {
 	}
 
 	/**
-	 * Initiates Connection to XenServer
+	 * Initiates Connection to vSphere Server
 	 * @throws VSphereException 
 	 */
 	public static VSphere connect(Server server) throws VSphereException {
