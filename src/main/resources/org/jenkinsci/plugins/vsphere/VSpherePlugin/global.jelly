@@ -26,16 +26,16 @@
                     add="${%Add Server}">
         <table width="100%">
           <br/>
-		  <f:entry field="name" title="${%Name}">
+		  <f:entry field="name" title="${%Name}" help="/plugin/VSphereCloud/help/global/help-Name.html">
            <f:textbox  />
 		  </f:entry>
-          <f:entry field="server" title="${%Server}">
+          <f:entry field="server" title="${%Server}" help="/plugin/VSphereCloud/help/global/help-Server.html">
             <f:textbox  />
           </f:entry>
-          <f:entry field="user" title="${%Username}">
+          <f:entry field="user" title="${%Username}" help="/plugin/VSphereCloud/help/global/help-Username.html">
             <f:textbox />
           </f:entry>
-          <f:entry field="pw" title="${%Password}">
+          <f:entry field="pw" title="${%Password}" help="/plugin/VSphereCloud/help/global/help-Password.html">
              <f:password />
           </f:entry>
         </table>

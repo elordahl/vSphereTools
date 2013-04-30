@@ -9,7 +9,7 @@
 
   <groupId>vsphereCloud</groupId>
   <artifactId>VSphereCloud</artifactId>
-  <version>0.1</version>
+  <version>0.2-SNAPSHOT</version>
   <packaging>hpi</packaging>
   
   <!-- get every artifact through maven.glassfish.org, which proxies all the artifacts that we need -->
