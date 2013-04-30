@@ -7,9 +7,9 @@
 		<relativePath/> 
   </parent>
 
-  <groupId>vsphereTools</groupId>
-  <artifactId>VSphereTools</artifactId>
+  <artifactId>vSphereTools</artifactId>
   <version>0.2-SNAPSHOT</version>
+  <name>vSphere Tools Plugin</name>
   <packaging>hpi</packaging>
   
   <!-- get every artifact through maven.glassfish.org, which proxies all the artifacts that we need -->
